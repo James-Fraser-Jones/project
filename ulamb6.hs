@@ -1,4 +1,5 @@
 import Data.Maybe
+import Data.Functor
 import Data.Set
 import qualified Data.Set as Set
 
@@ -38,6 +39,7 @@ fvars (Lam s e) = Set.delete s (fvars e)
 fvlist :: Expr -> [Name] --get list of unique free variable names of the expression
 fvlist = toList.fvars
 -----------------------------------------------------------------------------------------
+{--
 getIndex :: [a] -> Int -> Maybe a
 getIndex (x:xs) n = if n == 0 then Just x else getIndex xs (n-1)
 getIndex [] _ = Nothing
@@ -49,6 +51,10 @@ fresh' a n
 
 fresh :: Int -> Name --get a fresh variable name
 fresh = fresh' 1
+--}
+
+fresh :: [Name]
+fresh = ((\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem $ 26)) <$> [0..]
 
 unique' :: Int -> [Name] -> Name
 unique' n nm = if elem (fresh n) nm then unique' (n+1) nm else fresh n
