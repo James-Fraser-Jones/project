@@ -39,28 +39,11 @@ fvars (Lam s e) = Set.delete s (fvars e)
 fvlist :: Expr -> [Name] --get list of unique free variable names of the expression
 fvlist = toList.fvars
 -----------------------------------------------------------------------------------------
-{--
-getIndex :: [a] -> Int -> Maybe a
-getIndex (x:xs) n = if n == 0 then Just x else getIndex xs (n-1)
-getIndex [] _ = Nothing
+vars :: [Name]
+vars = ((\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem $ 26)) <$> [0..]
 
-fresh' :: Int -> Int -> Name
-fresh' a n
-    | (n <= 25) = [(fromJust (getIndex ['a'..'z'] n))] ++ (if a > 1 then show a else "")
-    | otherwise = fresh' (a+1) (n-26)
-
-fresh :: Int -> Name --get a fresh variable name
-fresh = fresh' 1
---}
-
-fresh :: [Name]
-fresh = ((\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem $ 26)) <$> [0..]
-
-unique' :: Int -> [Name] -> Name
-unique' n nm = if elem (fresh n) nm then unique' (n+1) nm else fresh n
-
-unique :: [Name] -> Name --get a unique variable name from the list given
-unique = unique' 0
+fresh :: [Name] -> Name
+fresh xs = head $ Prelude.filter (flip notElem xs) vars
 -----------------------------------------------------------------------------------------
 sub :: Expr -> Name -> Expr -> Expr --substitute the free variables with name s' in the first expression with e' (capture avoiding)
 sub (Lit s) _ _ = Lit s
@@ -72,7 +55,7 @@ sub (Lam s e) s' e'
   -- | otherwise                = Lam s (sub e s' e')
   --{-
   | otherwise                = Lam us (sub ue s' e') --some free variables in e' will be captured by s binder wherever e' is subbed in
-    where us = (unique.toList) (union (fvars e) (fvars e')) --therefore alpha rename s binder and its variables to avoid all free variable names in e' and e
+    where us = (fresh.toList) (union (fvars e) (fvars e')) --therefore alpha rename s binder and its variables to avoid all free variable names in e' and e
           ue = sub e s (Var us) --}
 -----------------------------------------------------------------------------------------
 beta :: Expr -> Expr --single step of beta reduction
