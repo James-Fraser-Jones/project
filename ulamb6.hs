@@ -20,7 +20,7 @@ fvars (Lam s e) = Set.delete s (fvars e)
 
 fresh :: Set Name -> Name --given a set of used variable names, return a fresh variable from an infinite list
 fresh s = head $ filter (flip Set.notMember s) vars
-  where vars = ((\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem $ 26)) <$> [0..]
+  where vars = (\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem $ 26) <$> [0..]
 -----------------------------------------------------------------------------------------
 --capture avoiding substitution function works as it's supposed to, evidenced by stack exchange answer on the subject
 sub :: Expr -> Name -> Expr -> Expr --substitute the free variables with name s' in the first expression with e' (capture avoiding)
@@ -34,10 +34,12 @@ sub (Lam s e) s' e'
     where us = fresh $ Set.union (fvars e) (fvars e')  --therefore alpha rename s binder and its variables to avoid all free variable names in e' and e
           ue = sub e s (Var us)
 -----------------------------------------------------------------------------------------
+--UGLY BELOW
+-----------------------------------------------------------------------------------------
+
 --all these functions make a bunch of assumptions about the evaluation strategy being used
 --which hasn't been propperly defined although the first rule of beta is certainly correct
 --and the first rule of eta redction should probably also be correct too, I need to check this
-
 beta :: Expr -> Expr --single step of beta reduction
 beta (App (Lam s e1) e2) = sub e1 s e2
 beta (App e1 e2) = App (beta e1) (beta e2)
@@ -90,3 +92,4 @@ test10 = App (Var "z") (App (App (App (Var "w") (App (Var "u") (Var "v"))) (Var 
 test11 = Lam "a" (App (Var "b") (Var "a")) --capture avoidance tests
 test12 = Lam "a" (App (App (Var "b") (Var "a")) (Lam "c" (App (App (Var "a") (Var "b")) (Var "c"))))
 test13 = Lam "a" (App (App (Var "b") (Var "a")) (Lam "c" (App (App (App (Var "a") (Var "b")) (Var "c")) (Lam "d" (App (App (App (Var "a") (Var "b")) (Var "c")) (Var "d"))))))
+--sub test13 "b" (Var "a")
