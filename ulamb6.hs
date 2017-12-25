@@ -1,17 +1,63 @@
-import Data.Maybe
 import Data.Functor
-import Data.Set
+import Data.Set (Set)
 import qualified Data.Set as Set
-
+-----------------------------------------------------------------------------------------
+--this is 100% correct, inclusion of literals here is purely optional
 type Name = String --to distinguish variable names from other strings
-
 data Expr
   = Var Name      -- If x is a variable , then x ∈ Λ                     (variables)
   | App Expr Expr -- If (M, N ∈ Λ) , then (M N) ∈ Λ                      (application)
   | Lam Name Expr -- If x is a variable and M ∈ Λ , then (λx.M) ∈ Λ      (lambda abstraction)
   | Lit Name
   deriving (Eq)
+-----------------------------------------------------------------------------------------
+--both of these functions do exactly what they're supposed to do
+fvars :: Expr -> Set Name --get a set containing every instance of a free variable in the expression
+fvars (Lit s) = Set.empty
+fvars (Var s) = Set.singleton s
+fvars (App e1 e2) = Set.union (fvars e1) (fvars e2)
+fvars (Lam s e) = Set.delete s (fvars e)
 
+fresh :: Set Name -> Name --given a set of used variable names, return a fresh variable from an infinite list
+fresh s = head $ filter (flip Set.notMember s) vars
+  where vars = ((\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem $ 26)) <$> [0..]
+-----------------------------------------------------------------------------------------
+--capture avoiding substitution function works as it's supposed to, evidenced by stack exchange answer on the subject
+sub :: Expr -> Name -> Expr -> Expr --substitute the free variables with name s' in the first expression with e' (capture avoiding)
+sub (Lit s) _ _ = Lit s
+sub (Var s) s' e' = if s == s' then e' else Var s
+sub (App e1 e2) s' e' = App (sub e1 s' e') (sub e2 s' e')
+sub (Lam s e) s' e'
+  | (s == s')                  = Lam s e               --s' variables become bound so don't sub within this scope
+  | Set.notMember s $ fvars e' = Lam  s (sub  e s' e') --s' variables remain free so do sub within this scope
+  | otherwise                  = Lam us (sub ue s' e') --some free variables in e' will be captured by s binder wherever e' is subbed in
+    where us = fresh $ Set.union (fvars e) (fvars e')  --therefore alpha rename s binder and its variables to avoid all free variable names in e' and e
+          ue = sub e s (Var us)
+-----------------------------------------------------------------------------------------
+--all these functions make a bunch of assumptions about the evaluation strategy being used
+--which hasn't been propperly defined although the first rule of beta is certainly correct
+--and the first rule of eta redction should probably also be correct too, I need to check this
+
+beta :: Expr -> Expr --single step of beta reduction
+beta (App (Lam s e1) e2) = sub e1 s e2
+beta (App e1 e2) = App (beta e1) (beta e2)
+beta (Lam s e) = Lam s (beta e)
+beta (Var s) = Var s
+beta (Lit s) = Lit s
+
+eta :: Expr -> Expr --single step of eta reduction
+eta (Lam s (App e (Var s'))) = if and [s == s', Set.notMember s $ fvars e] then e else Lam s (eta (App e (Var s')))
+eta (App e1 e2) = App (eta e1) (eta e2)
+eta (Lam s e) = Lam s (eta e)
+eta (Var s) = Var s
+eta (Lit s) = Lit s
+
+evaluate :: Expr -> IO ()
+evaluate e = do
+  print e
+  if beta e == e then (if eta e == e then return () else evaluate (eta e)) else evaluate (beta e)
+-----------------------------------------------------------------------------------------
+--this doesn't quite work the way it probably should in all situations, although it's close
 instance Show Expr where
   --application is left associative (don't brace variables)
   show (App (App (e1) (e2)) (Var s)) = show (App (e1) (e2)) ++ " " ++ show (Var s)
@@ -29,53 +75,6 @@ instance Show Expr where
 
 brace :: String -> String
 brace s = "(" ++ s ++ ")"
------------------------------------------------------------------------------------------
-fvars :: Expr -> Set Name --get a set containing every instance of a free variable in the expression
-fvars (Lit s) = empty
-fvars (Var s) = singleton s
-fvars (App e1 e2) = Set.union (fvars e1) (fvars e2)
-fvars (Lam s e) = Set.delete s (fvars e)
-
-fvlist :: Expr -> [Name] --get list of unique free variable names of the expression
-fvlist = toList.fvars
------------------------------------------------------------------------------------------
-vars :: [Name]
-vars = ((\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem $ 26)) <$> [0..]
-
-fresh :: [Name] -> Name
-fresh xs = head $ Prelude.filter (flip notElem xs) vars
------------------------------------------------------------------------------------------
-sub :: Expr -> Name -> Expr -> Expr --substitute the free variables with name s' in the first expression with e' (capture avoiding)
-sub (Lit s) _ _ = Lit s
-sub (Var s) s' e' = if s == s' then e' else Var s
-sub (App e1 e2) s' e' = App (sub e1 s' e') (sub e2 s' e')
-sub (Lam s e) s' e'
-  | (s == s')                = Lam s e               --s' variables become bound so don't sub within this scope
-  | not (elem s (fvlist e')) = Lam s (sub e s' e')   --s' variables remain free so do sub within this scope
-  -- | otherwise                = Lam s (sub e s' e')
-  --{-
-  | otherwise                = Lam us (sub ue s' e') --some free variables in e' will be captured by s binder wherever e' is subbed in
-    where us = (fresh.toList) (union (fvars e) (fvars e')) --therefore alpha rename s binder and its variables to avoid all free variable names in e' and e
-          ue = sub e s (Var us) --}
------------------------------------------------------------------------------------------
-beta :: Expr -> Expr --single step of beta reduction
-beta (App (Lam s e1) e2) = sub e1 s e2
-beta (App e1 e2) = App (beta e1) (beta e2)
-beta (Lam s e) = Lam s (beta e)
-beta (Var s) = Var s
-beta (Lit s) = Lit s
------------------------------------------------------------------------------------------
-eta :: Expr -> Expr --single step of eta reduction
-eta (Lam s (App e (Var s'))) = if and [s == s', not (elem s (fvlist e))] then e else Lam s (eta (App e (Var s')))
-eta (App e1 e2) = App (eta e1) (eta e2)
-eta (Lam s e) = Lam s (eta e)
-eta (Var s) = Var s
-eta (Lit s) = Lit s
------------------------------------------------------------------------------------------
-evaluate :: Expr -> IO ()
-evaluate e = do
-  print e
-  if beta e == e then (if eta e == e then return () else evaluate (eta e)) else evaluate (beta e)
 -----------------------------------------------------------------------------------------
 --evaluate test4
 test4 = Lam "x" (Lam "y" (App (Lam "z" (App (Lam "x" (App (Var "z") (Var "x"))) (Lam "y" (App (Var "z") (Var "y"))))) (App (Var "x") (Var "y"))))
