@@ -20,7 +20,7 @@ fvars (Lam s e) = Set.delete s (fvars e)
 
 fresh :: Set Name -> Name --given a set of used variable names, return a fresh variable from an infinite list
 fresh s = head $ filter (flip Set.notMember s) vars
-  where vars = (\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem $ 26) <$> [0..]
+  where vars = (\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem 26) <$> [0..]
 -----------------------------------------------------------------------------------------
 --capture avoiding substitution function works as it's supposed to, evidenced by stack exchange answer on the subject
 sub :: Expr -> Name -> Expr -> Expr --substitute the free variables with name s' in the first expression with e' (capture avoiding)
