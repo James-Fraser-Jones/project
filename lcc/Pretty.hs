@@ -1,7 +1,6 @@
+module Pretty(Show) where
 
-type Name = String
-
-data E = Var Name | Star | Box | App E E | Lam Name E E | Dep Name E E deriving Eq
+import Types
 
 instance Show E where
   --app rules
@@ -12,14 +11,11 @@ instance Show E where
   --dep rules (with sugar)
   show (Dep s e1 e2)
     -- | (Dep s e1 e2) == (Dep s Star Star) = (show e1) ++ "→" ++ (show e2) --this is incorrect because it's the TYPE of e1 and e2 which need to be * not themselves
-    | otherwise = "∏" ++ s ++ ":" ++ (maybrace e1) ++ "." ++ (show e2)
+    | otherwise = "Π" ++ s ++ ":" ++ (maybrace e1) ++ "." ++ (show e2)
   --non recursive definitions
   show (Var s) = s
   show Star = "★"
   show Box = "☐"
-
-brace :: String -> String
-brace s = "(" ++ s ++ ")"
 
 braced :: E -> Bool
 braced (Var s) = False
@@ -27,11 +23,8 @@ braced Star = False
 braced Box = False
 braced _ = True
 
+brace :: String -> String
+brace s = "(" ++ s ++ ")"
+
 maybrace :: E -> String
 maybrace x = if braced x then brace (show x) else show x
-
-termToTerm :: E --the TYPE of a function from terms to terms
-termToTerm = Dep "_" Star Star
-
-typeToType :: E --the TYPE of a function from types to types
-typeToType = Dep "_" Box Box
