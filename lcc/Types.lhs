@@ -124,3 +124,16 @@ We can even show that the kind level above satisfies the STLC's type requirement
 k ::= ∗ | Π_:k.k' which equals: k ::= ∗ | k -> k' (base and function types where the type of all propper types is * )
 
 This proves that lambda omega has an STLC at the type level due to its ability to express functions from types to types.
+-------------------------------------------------------------------------
+I can also see from this structure that there isn't really any sensible type for Πx:A.k nor for Πa:k.A = ∀x:k.A.
+
+Why? It's because for an expression to have a type, there must be some construct in the level above to represent it.
+In the case of Π_:A.A' = A -> A', the type is * (because A -> A' is a function type). It also happens that the kind level
+only has 3 possibilities. 2 of them are deps which only leaves the literal *.
+
+It the same case with Π_:k.k' = k -> k'. The type (by definition) of this function is ☐ but this also happens to be the only thing it could be
+since the top level only has one expression which is exactly ☐.
+
+So unless the type of EVERYTHING at the kind level is also supposed to be ☐, there is no sensible type for Πx:A.k.
+
+Likewise, unless the type of ∀x:k.A. is ∗, Πx:A.k or Π_:k.k' there is no sensible type for it either.
