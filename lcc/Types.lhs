@@ -1,18 +1,12 @@
-module Types where
+> module Types where
 
-type Name = String
+> type Name = String
+> --data E = Var Name | Star | Box | App E E | Lam Name E E | Dep Name E E deriving Eq
+> data E = Lit Term | LitT Type | Var Name | Star | Box | App E E | Lam Name E E | Dep Name E E deriving Eq
+> data Term = B Bool | I Int deriving Eq
+> data Type = Bool | Int deriving Eq
+> type Context = [(E, E)]
 
---data E = Var Name | Star | Box | App E E | Lam Name E E | Dep Name E E deriving Eq
-
-data E = Lit Term | LitT Type | Var Name | Star | Box | App E E | Lam Name E E | Dep Name E E deriving Eq
-
-data Term = B Bool | I Int deriving Eq
-
-data Type = Bool | Int deriving Eq
-
-type Context = [(E, E)]
-
-{-
 k ::= ∗
 A ::= p | A → B
 e ::= x | λx:A.e | e e
@@ -101,7 +95,7 @@ A ::= p | a | λx:A.A' | λa:k.A | A e  | A A' | Π_:A.A' | Πa:k.A
 e ::= l | x | λx:A.e  | λa:k.e | e e' | e A
      Lit|Var|        Abs       |     App     |        Dep
 
-I rewrote the formulas to make it clear that A and A' are (potentially) different types, as are e and e' and k and k'.
+I rewrote the formulas to make it clear that A and A' are (potentially) different types, as are e and e' and k and k' for terms and kinds respectively.
 ------------------------------------------------------------------------
 There is an odd inconsistency in the way you read abs and dep in spite of them having the same syntax.
 
@@ -130,4 +124,3 @@ We can even show that the kind level above satisfies the STLC's type requirement
 k ::= ∗ | Π_:k.k' which equals: k ::= ∗ | k -> k' (base and function types where the type of all propper types is * )
 
 This proves that lambda omega has an STLC at the type level due to its ability to express functions from types to types.
--}
