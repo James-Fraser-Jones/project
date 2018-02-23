@@ -137,3 +137,55 @@ since the top level only has one expression which is exactly ☐.
 So unless the type of EVERYTHING at the kind level is also supposed to be ☐, there is no sensible type for Πx:A.k.
 
 Likewise, unless the type of ∀x:k.A. is ∗, Πx:A.k or Π_:k.k' there is no sensible type for it either.
+-------------------------------------------------------------------------
+How do I know that * and ☐ are literals? Also, why are literals for Terms not included by default? (The Type literal is included even in the earliest examples
+as 'p').
+
+When you think of a function at a specific level (i.e. at the level of Terms or Types as allowed by CoC), the type of that function can be represented by
+a binary tree with leaves as literals of that level.
+
+For instance, if we have a function 'f' at the Term level that takes in a function (that takes Terms of type int and returns Terms of type char)
+and produces a Term of type bool. The type of f (at the Type level) looks like this f : (Int -> Char) -> Bool
+
+As a tree.
+      .
+     / \
+   .    Bool
+  / \
+Int Char
+
+Crucially, leaves of this tree can be nothing other than literals at the Type level.
+
+What would a function at the Type level look like?
+We'll make a function with the same structure but at the Type level.
+
+We have a function 'g' at the Type level that takes in a function (that takes Types of type * and returns Types of type *)
+and produces a Type of type star. The type of f (at the Type level) looks like this g : (* -> *) -> *
+
+As a tree.
+      .
+     / \
+   .    *
+  / \
+ *   *
+
+This informally shows how * can be considered to be the (only) literal at the Kind level.
+And ☐ is similarly the only literal of the Top level (although functions are not permitted from Kinds of type ☐ to other Kinds of type ☐).
+
+So now we know why * and ☐ are literals in the same sense that p is for the Type level.
+
+Why do we not (by default) need Term literals?
+This is because Literals are really only required for the purpose of expressing the type of a function at a certain level.
+Needless to say, the term level is never used to express the type of a function from the level below because it's the bottom level.
+
+If it did, it could look something like this. e : 1 -> 0
+Of course, we do want literals at the type level so that we can easily do useful computations with CoC rather than attempting to
+express everything using church encoding (which is maybe? possible but fiddly and unneccessary regardless).
+
+However, from a purely technical point, we don't technically need literals at the term level. It suffices to just have a single type literal
+so that abstractions at the type level can be satisfied i.e. (\x:p.y) where 'p' is the type literal.
+
+This brings up another question, what is the type of a free variable at the term level? :S
+
+If an expression with a free variable is considered to be well typed from the typing rules, the perspective from a programming langauge
+would simply be that the free variable was undefined and throw an error.
