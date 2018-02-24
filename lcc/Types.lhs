@@ -19,9 +19,11 @@ k ::= ∗ | k → k
 A ::= a | p | A → B | ∀a:k.A | λa:k.A | A B
 e ::= x | λx:A.e | e e | Λa:k.e | e [A]
 
-k ::= ∗ | Πx:A.k | Πa:k.k'
-A ::= a | p | Πx:A.B | ∀a:k.A | Λx:A.B | A [e] | λa:k.A | A B
+k ::= ∗ | k → k | Πx:A.k
+A ::= a | p | A → B | ∀a:k.A | λa:k.A | A B | Λx:A.B | A [e]
 e ::= x | λx:A.e | e e | Λa:k.e | e [A]
+
+only things added to lamda omega to make CoC are: Λx:A.B, A [e], Πx:A.k (abstraction, application and type for functions from Terms to Types)
 
 T ::= ☐
 k ::= ∗ |                                   Πx:A.k | Πx:k.k'
@@ -189,3 +191,55 @@ This brings up another question, what is the type of a free variable at the term
 
 If an expression with a free variable is considered to be well typed from the typing rules, the perspective from a programming langauge
 would simply be that the free variable was undefined and throw an error.
+
+-------------------------------------------------------------------------
+
+At the Term level:
+
+  The type of any Term literal l is the corresponding Type literal p which is decided to be the type of that term.
+  For example, at the term level we have the literals 1, 2, 3, 4 etc.. and at the type level we have the corresponding literal 'Int'.
+
+  The type of any Term variable x is either Nothing (ill typed) if the variable is free, or if it is bound then it appears
+  in an abstraction like so: \x:T.e in which case the type of x is exactly as declared in this scope: T
+
+  The type of any abstraction \x:T.e is precisely Πx:T.A (where e:A)
+
+  The type of any application e e' (where e = \x:T.g, e':T, g:A) is A
+
+At the Type level:
+
+  All the same rules above apply to variables, abractions and applications.
+
+  The type of any Type literal is the Kind literal *
+
+  The type of the type of normal (Term level) functions, Π_:A.A' is also *
+
+  I don't know the type of the type of polymorphic functions: Πa:k.A
+
+At the kind level:
+
+  The type of the Kind literal * is ☐
+
+  The type of the type of Type functions, Π_:k.k' is also ☐
+
+  I don't know the type of the type of dependent functions: Πx:A.k
+
+-------------------------------------------------------------------------
+
+The word "type" is used to refer to 3 completely seperate things:
+
+:, A, *.
+
+1. e:F means that the expression e has the 'type' F (i.e. the representation of expression e in the level above is F)
+
+2. A represents a 'Type' (i.e. an expression which is in the Type level, directly above the Term level)
+
+3. * is called 'Type' (it's the only literal at the Kind level)
+
+A very confusing yet technically correct sentence using all 3 definitions of type is the following:
+
+"The type of any type literal is type."     p : *
+
+which corresponds to:
+
+"The 1 of any 2 literal is 3"         (2 lit) 1 3
