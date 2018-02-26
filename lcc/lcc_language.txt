@@ -1,0 +1,82 @@
+
+    Calculus   |                         Within λ-Cube                            |                           Simplified
+---------------|------------------------------------------------------------------|----------------------------------------------------------------
+               | T ::= _                                                          |
+               | k ::= ∗ |                                      _______ | ______  | k ::= *
+       λ→      | A ::= p | _ | ______  | ______ | ____ | ____ | Πx:A.A' | ______  | A ::= p | A → A'
+               | e ::= l | x | λx:A.e  | ______ | e e' | ____                     | e ::= l | v | λv:A.e | e e'
+               |      Lit|Var|        Abs       |     App     |        Dep        |
+---------------|------------------------------------------------------------------|----------------------------------------------------------------
+               | T ::= _                                                          |
+               | k ::= ∗ |                                      _______ | ______  | k ::= *
+       λ2      | A ::= p | x | ______  | ______ | ____ | ____ | Πx:A.A' | Πx:k.A  | A ::= p | a | A → A' | Ɐa:k.A
+               | e ::= l | x | λx:A.e  | λx:k.e | e e' | e A                      | e ::= l | v | λv:A.e | Λa:k.e | e e' | e A
+               |      Lit|Var|        Abs       |     App     |        Dep        |
+---------------|------------------------------------------------------------------|----------------------------------------------------------------
+               | T ::= □                                                          | T ::= □
+               | k ::= ∗ |                                      _______ | Πx:k.k' | k ::= ∗ | k → k'
+       λω      | A ::= p | x | ______  | λx:k.A | ____ | A A' | Πx:A.A' | Πx:k.A  | A ::= p | a | λa:k.A | A A' | A → A' | Ɐa:k.A
+               | e ::= l | x | λx:A.e  | λx:k.e | e e' | e A                      | e ::= l | v | λv:A.e | Λa:k.e | e e' | e A
+               |      Lit|Var|        Abs       |     App     |        Dep        |
+---------------|------------------------------------------------------------------|----------------------------------------------------------------
+               | T ::= □                                                          | T ::= □
+               | k ::= ∗ |                                      Πx:A.k  | Πx:k.k' | k ::= ∗ | k → k' | Πv:A.k
+       λC      | A ::= p | x | λx:A.A' | λx:k.A | A e  | A A' | Πx:A.A' | Πx:k.A  | A ::= p | a | λa:k.A | Λv:A.A' | A A' | A e | A → A' | Ɐa:k.A
+               | e ::= l | x | λx:A.e  | λx:k.e | e e' | e A                      | e ::= l | v | λv:A.e | Λa:k.e  | e e' | e A
+               |      Lit|Var|        Abs       |     App     |        Dep        |
+---------------|------------------------------------------------------------------|----------------------------------------------------------------
+
+Differences in syntax convention:
+
+  Πx:A.A' = Π_:A.A' = A → A' (type of Term-level functions)
+  Πx:k.k' = Π_:k.k' = k → k' (type of Type-level functions)
+  Πx:k.A  = Ɐx:k.A           (type of "polymorphic" Term-level functions)
+  Πx:A.k                     (type of "dependent" Type-level functions)
+
+  λx:k.e  = Λx:k.e (captial lambda convention can be used to distinguish polymorphic and dependent abstractions from the other two function types)
+  λx:A.A' = Λx:A.A'
+
+  x = v | a (different set of symbols can be used to distinguish Type variables from Term variables)
+  x:A <=> x = v
+  x:k <=> x = a
+
+Explanation:
+
+  l is the set of all literal Terms
+  p is the set of all literal Types
+  * is the literal Kind
+  □ is the literal Top
+
+  x represents a name from the set of variable names that reference Terms and Types
+  v represents a name from the set of variable names that reference Terms
+  a represents a name from the set of variable names that reference Types
+
+  variables are used to reference expressions from the sort they belong to
+  (i.e. a variable with sort Type will reference another expression with sort Type)
+
+  each of the four abstractions and applications is used to create and subsequently
+  resolve functions from each of the four types listed above
+
+  the way to interpret the semantic meaning behind abstractions and their types is
+  the following:
+
+  i:iT.o:oT is a function from input values, i, of type, iT, to output values, o, of type, oT
+
+  λi:iT.o is the corresponding abstraction representing this function
+  Πi:iT.oT is the corresponding type of this function
+
+  we can see that the input and its type is always included in spite of the fact that Term and Type functions
+  don't require us to know the Type and Term (repectively)
+
+  this is because, conversely, polymorphic and dependent functions do require us to know these things
+
+Big question:
+
+  Since 3 of the possible functions are capable of using expressions of sort Type as input and/or output.
+  And since (A → A') and (Ɐa:k.A) have sort type, in addition to all the usual constructs which are the same in the Term level below.
+  What does it mean (at a semantic level) to pass these constructs around?
+  What use could we have for this functionality?
+
+  Notably, it is only possible to do this with the types of term and polymorphic functions, but not
+  with the types of term and dependent functions since they have sort Kind which prevents them from being used
+  as the input or output of functions. (Because the Kind level doesn't have abstractions).

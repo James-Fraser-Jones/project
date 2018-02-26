@@ -214,7 +214,7 @@ At the Type level:
 
   The type of the type of normal (Term level) functions, Π_:A.A' is also *
 
-  I don't know the type of the type of polymorphic functions: Πa:k.A
+  The type of the type of polymorphic functions: Πa:k.A is also * (according to type formation 2 page 20 of Henk 2000 thesis)
 
 At the kind level:
 
@@ -222,7 +222,7 @@ At the kind level:
 
   The type of the type of Type functions, Π_:k.k' is also ☐
 
-  I don't know the type of the type of dependent functions: Πx:A.k
+  The type of the type of dependent functions: Πx:A.k is also ☐
 
 -------------------------------------------------------------------------
 
