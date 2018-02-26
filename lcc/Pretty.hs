@@ -8,14 +8,19 @@ instance Show E where
   show (App x y) = (maybrace x) ++ " " ++ (maybrace y)
   --lam rule
   show (Lam s e1 e2) = "λ" ++ s ++ ":" ++ (maybrace e1) ++ "." ++ (show e2)
-  --dep rules (with sugar)
-  show (Dep s e1 e2)
-    -- | (Dep s e1 e2) == (Dep s Star Star) = (show e1) ++ "→" ++ (show e2) --this is incorrect because it's the TYPE of e1 and e2 which need to be * not themselves
-    | otherwise = "Π" ++ s ++ ":" ++ (maybrace e1) ++ "." ++ (show e2)
-  --non recursive definitions
+  --dep rule
+  show (Dep s e1 e2) = "Π" ++ s ++ ":" ++ (maybrace e1) ++ "." ++ (show e2)
+  --variables
   show (Var s) = s
-  show Star = "★"
+  --literals
   show Box = "☐"
+  show Star = "★"
+  show (LitT ty) = show ty
+  show (Lit t) = show t
+
+instance Show Term where
+  show (B b) = show b
+  show (I i) = show i
 
 braced :: E -> Bool
 braced (Var s) = False
