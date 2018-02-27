@@ -56,6 +56,13 @@ many' v = many_v
     many_v = some_v <|> pure []
     some_v = (:) <$> v <*> many_v
 
+chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a
+p `chainl1` op = do {a <- p; rest a} --this was taken from http://dev.stephendiehl.com/fun/002_parsers.html
+ where rest a = (do f <- op
+                    b <- p
+                    rest (f a b))
+                <|> return a
+
 satisfy :: (Char -> Bool) -> Parser Char
 satisfy p = item >>= \c ->
                 if p c
@@ -107,6 +114,9 @@ type' :: Parser Type
 type' = string "Bool" *> pure Bool
     <|> string "Int" *> pure Int
 
+app :: Parser (E -> E -> E)
+app = char '@' *> pure App
+
 expr :: Parser E
 expr = Lam <$> (char '\\' *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
    <|> Dep <$> (char  '^' *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
@@ -116,5 +126,6 @@ expr = Lam <$> (char '\\' *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
    <|> string "[]" *> pure Box
    <|> char '*' *> pure Star
    <|> (char '(') *> expr <* (char ')')
+   <|> chainl1 expr app
 
---App <$> expr <* (string "@") *> expr
+-- parse expr "\\a:*.\\x:a.x"
