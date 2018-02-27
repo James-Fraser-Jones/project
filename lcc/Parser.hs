@@ -47,7 +47,7 @@ orElse (Parser px) (Parser py) = Parser (\ts ->
 some' :: Parser a -> Parser [a] --this was taken from http://dev.stephendiehl.com/fun/002_parsers.html
 some' v = some_v
   where
-    many_v = some_v <|> pure []
+    many_v = some_v <|> pure [] --unsure why this can't just be failure but it seems to break everything
     some_v = (:) <$> v <*> many_v
 
 many' :: Parser a -> Parser [a] --this was taken from http://dev.stephendiehl.com/fun/002_parsers.html
@@ -71,6 +71,9 @@ string (c:cs) = char c >>= \c' ->
                 string cs >>= \cs' ->
                 produce (c:cs)
 
+------------------------------------------------
+--More specific parsers
+
 digit :: Parser Char
 digit = satisfy isDigit
 
@@ -88,27 +91,30 @@ w :: Parser a -> Parser a --remove whitespace from beginning of input
 w (Parser px) = Parser (px.spaces)
   where spaces (' ':xs) = spaces xs
         spaces s = s
+
 ------------------------------------------------
---Parsing the expressions
+--Expression parsers
 
 name :: Parser Name --lowercase letters or numbers, no number in first char
 name = (:) <$> lower <*> (many' lowerDigit)
 
 term :: Parser Term
-term = (string "True") *> pure (B True)
-   <|> (string "False") *> pure (B False)
+term = string "True" *> pure (B True)
+   <|> string "False" *> pure (B False)
    <|> I <$> int
 
 type' :: Parser Type
-type' = (string "Bool") *> pure Bool
-    <|> (string "Int") *> pure Int
+type' = string "Bool" *> pure Bool
+    <|> string "Int" *> pure Int
 
 expr :: Parser E
-expr = App <$> expr <* (string " ") *> expr
-   <|> Lam <$> (string "\\") *> name <* (char ':') *> expr <* (char '.') *> expr
-   <|> Dep <$> (string "^") *> name <* (char ':') *> expr <* (char '.') *> expr
+expr = Lam <$> (char '\\' *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
+   <|> Dep <$> (char  '^' *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
    <|> Var <$> name
    <|> Lit <$> term
    <|> LitT <$> type'
-   <|> (string "[]") *> pure Box
-   <|> (char '*') *> pure Star
+   <|> string "[]" *> pure Box
+   <|> char '*' *> pure Star
+   <|> (char '(') *> expr <* (char ')')
+
+--App <$> expr <* (string "@") *> expr
