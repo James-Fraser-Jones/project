@@ -1,13 +1,3 @@
-> module Types where
-
-> type Name = String
-> --data E = Var Name | Star | Box | App E E | Lam Name E E | Dep Name E E deriving Eq
-> data E = Lit Term | LitT Type | Var Name | Star | Box | App E E | Lam Name E E | Dep Name E E deriving Eq
-> data Term = B Bool | I Int deriving Eq
-> data Type = Bool | Int deriving (Eq, Show)
-
-> type Context = [(E, E)]
-
 k ::= ∗
 A ::= p | A → B
 e ::= x | λx:A.e | e e
@@ -244,3 +234,16 @@ A very confusing yet technically correct sentence using all 3 definitions of typ
 which corresponds to:
 
 "The 1 of any 2 literal is 3"         (2 lit) 1 3
+
+-------------------------------------------------------------------------
+
+Big question:
+
+  Since 3 of the possible functions are capable of using expressions of sort Type as input and/or output.
+  And since (A → A') and (Ɐa:k.A) have sort type, in addition to all the usual constructs which are the same in the Term level below.
+  What does it mean (at a semantic level) to pass these constructs around?
+  What use could we have for this functionality?
+
+  Notably, it is only possible to do this with the types of term and polymorphic functions, but not
+  with the types of term and dependent functions since they have sort Kind which prevents them from being used
+  as the input or output of functions. (Because the Kind level doesn't have abstractions).

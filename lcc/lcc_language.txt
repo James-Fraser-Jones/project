@@ -69,14 +69,3 @@ Explanation:
   don't require us to know the Type and Term (repectively)
 
   this is because, conversely, polymorphic and dependent functions do require us to know these things
-
-Big question:
-
-  Since 3 of the possible functions are capable of using expressions of sort Type as input and/or output.
-  And since (A → A') and (Ɐa:k.A) have sort type, in addition to all the usual constructs which are the same in the Term level below.
-  What does it mean (at a semantic level) to pass these constructs around?
-  What use could we have for this functionality?
-
-  Notably, it is only possible to do this with the types of term and polymorphic functions, but not
-  with the types of term and dependent functions since they have sort Kind which prevents them from being used
-  as the input or output of functions. (Because the Kind level doesn't have abstractions).

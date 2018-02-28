@@ -63,6 +63,30 @@ p `chainl1` op = do {a <- p; rest a} --this was taken from http://dev.stephendie
                     rest (f a b))
                 <|> return a
 
+{-
+--Black magicks below
+
+chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a
+chainl1 p op = foldl' (flip ($)) <$> p <*> many (flip <$> op <*> p)
+
+op :: Parser (a -> b -> c)
+p :: Parser b
+flip <$> op :: Parser (b -> a -> c)
+flip <$> op <*> p :: Parser (a -> c)
+many (flip <$> op <*> p) :: Parser [a -> a]
+flip ($) :: a -> (a -> a) -> a
+foldl' :: (b -> a -> b) -> b -> [a] -> b
+foldl' (flip ($)) <$> :: Parser a -> Parser [a -> a] -> Parser a
+
+chainr1 :: Parser a -> Parser (a -> a -> a) -> Parser a
+chainr1 p op = flip (foldr ($)) <$> many (try (p) <**> op) <*> p
+
+char ('\\') $> Lambda
+
+(<**>) :: Parser a -> Parser (a -> b) -> Parser b
+(<**>) = liftA2 (flip ($))
+--}
+
 satisfy :: (Char -> Bool) -> Parser Char
 satisfy p = item >>= \c ->
                 if p c
@@ -114,9 +138,6 @@ type' :: Parser Type
 type' = string "Bool" *> pure Bool
     <|> string "Int" *> pure Int
 
-app :: Parser (E -> E -> E)
-app = char '@' *> pure App
-
 expr :: Parser E
 expr = Lam <$> (char '\\' *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
    <|> Dep <$> (char  '^' *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
@@ -127,5 +148,8 @@ expr = Lam <$> (char '\\' *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
    <|> char '*' *> pure Star
    <|> (char '(') *> expr <* (char ')')
    <|> chainl1 expr app
+
+app :: Parser (E -> E -> E)
+app = char '@' *> pure App
 
 -- parse expr "\\a:*.\\x:a.x"

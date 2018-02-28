@@ -1,0 +1,43 @@
+# This is successfully parsed at: http://www.icosaedro.it/bnf_chk/bnf_chk-on-line.html
+# Curly {} braces correspond to "many", backslash is escaped, alternative lam and dep symbols are commented out, commas are ommited
+
+#----------------------------Primitives-------------------------------------
+boolean = "True" | "False" ;
+
+lower = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j"
+      | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t"
+      | "u" | "v" | "w" | "x" | "y" | "z" ;
+
+pos_digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+digit = "0" | pos_digit ;
+
+natural = pos_digit { digit } ;
+
+#----------------------------Constructs-------------------------------------
+term_lit = boolean | natural ;
+
+type_lit = "Bool" | "Nat" ;
+
+kind_lit = "★" | "*" ;
+
+top_lit = "☐" | "[]" ;
+
+lam = "\\" ;
+#   | "λ" | "Λ" ;
+
+dep = "^" ;
+#   | "Π" ;
+
+#----------------------------Expressions-------------------------------------
+expression = literal | variable | abstraction | abs_type | application;
+
+literal = term_lit | type_lit | kind_lit | top_lit ;
+
+variable = lower { lower | digit } ;
+
+abstraction = lam variable ":" expression "." expression ;
+
+abs_type = dep variable ":" expression "." expression ;
+
+application = expression "@" expression ;
