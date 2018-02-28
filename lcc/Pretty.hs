@@ -26,6 +26,8 @@ braced :: E -> Bool
 braced (Var s) = False
 braced Star = False
 braced Box = False
+braced (LitT ty) = False
+braced (Lit t) = False
 braced _ = True
 
 brace :: String -> String

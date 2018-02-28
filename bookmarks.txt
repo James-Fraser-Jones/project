@@ -76,3 +76,6 @@ https://en.wikiversity.org/wiki/Foundations_of_Functional_Programming/Pure_type_
 %Paper behind Agda's language which seems pretty advanced
 http://www.cse.chalmers.se/~ulfn/papers/thesis.pdf
 \fi
+
+%Paper on parsing which explains how to use chainl1
+https://eprints.nottingham.ac.uk/223/1/pearl.pdf

@@ -1,0 +1,49 @@
+ foldr :: (b -> a -> a) -> a -> [b] -> a
+ foldl :: (a -> b -> a) -> a -> [b] -> a
+foldl' :: (a -> b -> a) -> a -> [b] -> a
+           ^    ^    ^     ^     ^     ^
+          acc  elem acc  start list  result
+(before each fold) (after each fold)
+
+So you have some kind of accumulator, acc.
+It goes along the list, element by element adding to its accumulator and effectively folding the
+data structure into a single value.
+
+Foldl' is an efficient left fold which starts folding from the head of the list.
+--------------------------------------------------------------------------------
+   ($) :: (a -> b) -> a -> b
+
+foldl' :: (a -> b -> a) -> a -> [b] -> a
+
+  flip :: (a -> b -> c) -> b -> a -> c
+
+  <$> :: (a -> b) -> Parser a -> Parser b
+
+  <*> :: Parser (a -> b) -> Parser a -> Parser b
+
+  many :: Parser a -> Parser [a]
+--------------------------------------------------------------------------------
+  (the type signatures show a, b and c but in fact these are all the same type, a)
+  (the letters are just used to distinguish between the different elements)
+
+  op :: Parser (a -> b -> c)
+   p :: Parser b
+
+  flip <$> op :: Parser (b -> a -> c)
+
+  flip <$> op <*> p :: Parser (a -> c)
+
+  many (flip <$> op <*> p) :: Parser [a -> c]
+
+  foldl' (flip ($)) :: b -> [a -> c] -> b
+
+  foldl' (flip ($)) <$> p :: Parser ([a -> c] -> b)
+
+  foldl' (flip ($)) <$> p <*> many (flip <$> op <*> p) :: Parser b
+  --------------------------------------------------------------------------------
+  chainl1 :: Parser b -> Parser (a -> b -> c) -> Parser b
+  chainl1 p op = foldl' (flip ($)) <$> p <*> (many' (flip <$> op <*> p))
+  --------------------------------------------------------------------------------
+
+  App :: E -> E -> E
+  (App e1 e2) :: E
