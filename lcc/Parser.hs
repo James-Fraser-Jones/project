@@ -1,132 +1,162 @@
 module Parser where
-import Prelude hiding (concat)
+
 import Types
-import Control.Applicative
+
 import Data.Char
-import Data.Foldable
+import Data.Foldable (foldl')
+import Data.Functor
+
+import Control.Applicative hiding (some, many)
+import Control.Monad
+
+--heavily inspired by http://dev.stephendiehl.com/fun/002_parsers.html
+
 ------------------------------------------------
---General parsers
+--Basic parsers and parser combinators
 
-newtype Parser a = Parser (String -> [(String, a)])
+newtype Parser a = Parser { parse :: String -> [(a, String)] }
 
-produce :: a -> Parser a
-produce x = Parser (\ts -> [(ts, x)])
-
-parse :: Parser a -> (String -> [(String, a)]) --this can be included in the Parser a definition
-parse (Parser p) = p
-
-failure :: Parser a --surely this is just produce [] which itself is pure [] ?
-failure = Parser (\ts -> [])
-
-item :: Parser Char
-item = Parser (\ts -> case ts of
-  [] -> []
-  (x:xs) -> [(xs, x)])
+runParser :: Parser a -> String -> a
+runParser m s =
+  case parse m s of
+    [(res, [])] -> res
+    [(_, rs)]   -> error "Parser did not consume entire stream."
+    _           -> error "Parser error."
 
 instance Functor Parser where
-  fmap f (Parser px) = Parser(\ts -> [(ts', f x) | (ts', x) <- px ts])
+ fmap f (Parser cs) = Parser (\s -> [(f a, b) | (a, b) <- cs s]) --I've kinda forgotten how list comprehensions work
 
 instance Applicative Parser where
-  pure = produce
-  Parser pf <*> Parser px = Parser (\ts -> [ (ts'', f x )| (ts', f) <- pf ts,
-                                                           (ts'', x) <- px ts'])
+ pure a = Parser (\s -> [(a,s)]) --produce
+ (Parser cs1) <*> (Parser cs2) = Parser (\s -> [(f a, s2) | (f, s1) <- cs1 s, (a, s2) <- cs2 s1])
 
 instance Monad Parser where
-  return = produce
-  Parser px >>= f = Parser (\ts ->
-    concat([parse (f x) ts' | (ts', x) <- px ts]))
+ return = pure
+ p >>= f = Parser (\s -> concatMap (\(a, s') -> parse (f a) s') $ parse p s)
 
 instance Alternative Parser where
-  empty = failure
-  (<|>) = orElse
+ empty = Parser (\cs -> []) --failure
+ p <|> q = Parser (\s -> case parse p s of
+   []  -> parse q s
+   res -> res)
 
-orElse :: Parser a -> Parser a -> Parser a
-orElse (Parser px) (Parser py) = Parser (\ts ->
-  case px ts of
-        [] -> py ts
-        xs -> xs )
-
-some' :: Parser a -> Parser [a] --this was taken from http://dev.stephendiehl.com/fun/002_parsers.html
-some' v = some_v
-  where
-    many_v = some_v <|> pure [] --unsure why this can't just be failure but it seems to break everything
-    some_v = (:) <$> v <*> many_v
-
-many' :: Parser a -> Parser [a] --this was taken from http://dev.stephendiehl.com/fun/002_parsers.html
-many' v = many_v
+some :: Parser a -> Parser [a]
+some v = some_v
   where
     many_v = some_v <|> pure []
     some_v = (:) <$> v <*> many_v
 
-chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a --this was taken from Jamie
-chainl1 p op = foldl' (flip ($)) <$> p <*> many' (flip <$> op <*> p)
+many :: Parser a -> Parser [a] --
+many v = many_v
+  where
+    many_v = some_v <|> pure []
+    some_v = (:) <$> v <*> many_v
+
+item :: Parser Char
+item = Parser (\s -> case s of
+  []     -> []
+  (c:cs) -> [(c,cs)])
 
 satisfy :: (Char -> Bool) -> Parser Char
 satisfy p = item >>= \c ->
-                if p c
-                   then produce c
-                   else failure
-
-char :: Char -> Parser Char
-char c = satisfy (c==)
-
-string :: String -> Parser String
-string []     = produce []
-string (c:cs) = char c >>= \c' ->
-                string cs >>= \cs' ->
-                produce (c:cs)
+  if p c
+    then pure c
+    else empty
 
 ------------------------------------------------
---More specific parsers
+--Higher order parsers
 
-digit :: Parser Char
-digit = satisfy isDigit
+char :: Char -> Parser Char
+char c = satisfy (c ==)
+
+string :: String -> Parser String
+string []     = pure []
+string (c:cs) = char c >>= \c' ->
+                string cs >>= \cs' ->
+                pure (c:cs)
+
+oneOf :: [Char] -> Parser Char
+oneOf s = satisfy (flip elem s)
+
+chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a --this was taken from Jamie
+chainl1 p op = foldl' (flip ($)) <$> p <*> many (flip <$> op <*> p)
+
+token :: Parser a -> Parser a
+token px = spaces *> px
+
+parens :: Parser a -> Parser a
+parens px = (char '(') *> px <* (char ')')
+
+------------------------------------------------
+--Primitives
+
+boolean :: Parser Bool
+boolean = read <$> ((string "True") <|> (string "False"))
 
 lower :: Parser Char
 lower = satisfy isLower
 
-lowerDigit :: Parser Char
-lowerDigit = lower
-         <|> digit
+digit :: Parser Char
+digit = satisfy isDigit
 
-int :: Parser Int
-int = read <$> (some' digit)
+natural :: Parser Int
+natural = read <$> some digit
 
-whitespace :: Parser String
-whitespace = many' (satisfy isSpace)
+spaces :: Parser String
+spaces = many (satisfy isSpace)
 
-token :: Parser a -> Parser a
-token px = whitespace *> px
+lam :: Parser String
+lam = string "λ"
+  <|> string "\\"
+  <|> string "Lam"
+
+dep :: Parser String
+dep = string "Π"
+  <|> string "^"
+  <|> string "Dep"
+
+star :: Parser String
+star = string "★"
+   <|> string "*"
+   <|> string "Star"
+
+box :: Parser String
+box = string "☐"
+  <|> string "[]"
+  <|> string "Box"
 
 ------------------------------------------------
 --Expression parsers
 
-name :: Parser Name --lowercase letters or numbers, no number in first char
-name = (:) <$> lower <*> (many' lowerDigit)
+termLit :: Parser TermLit
+termLit = B <$> boolean
+      <|> N <$> natural
 
-term :: Parser Term
-term = string "True" *> pure (B True)
-   <|> string "False" *> pure (B False)
-   <|> I <$> int
+typeLit :: Parser TypeLit
+typeLit = (string "Bool") *> pure Bool
+      <|> (string "Nat")  *> pure Nat
 
-type' :: Parser Type
-type' = string "Bool" *> pure Bool
-    <|> string "Int" *> pure Int
+literal :: Parser Literal
+literal = box  *> pure Top
+      <|> star *> pure Kind
+      <|> Type <$> typeLit
+      <|> Term <$> termLit
 
-expr :: Parser E
-expr = chainl1 exprNoApp app
+name :: Parser Name
+name = (:) <$> lower <*> (many (lower <|> digit))
 
-exprNoApp :: Parser E
-exprNoApp = Lam <$> (char '\\' *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
-        <|> Dep <$> (char  '^' *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
-        <|> Var <$> name
-        <|> Lit <$> term
-        <|> LitT <$> type'
-        <|> string "[]" *> pure Box
-        <|> char '*' *> pure Star
-        <|> (char '(') *> expr <* (char ')')
-
-app :: Parser (E -> E -> E)
+app :: Parser (Expr -> Expr -> Expr)
 app = char '@' *> pure App
 
+exprNoApp :: Parser Expr
+exprNoApp = parens expr
+        <|> Lam <$> (lam *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
+        <|> Dep <$> (dep *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
+        <|> Var <$> name
+        <|> Lit <$> literal
+
+expr :: Parser Expr
+expr = chainl1 exprNoApp app
+
 -- parse expr "\\a:*.\\x:a.x"
+-- runParser expr "x@(1@3)@\\a:x@b.\\x:a.x"

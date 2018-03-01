@@ -2,7 +2,7 @@ module Pretty(Show) where
 
 import Types
 
-instance Show E where
+instance Show Expr where
   --app rules
   show (App (App e1 e2) x) = (show (App e1 e2)) ++ " " ++ (maybrace x)
   show (App x y) = (maybrace x) ++ " " ++ (maybrace y)
@@ -13,25 +13,25 @@ instance Show E where
   --variables
   show (Var s) = s
   --literals
-  show Box = "☐"
-  show Star = "★"
-  show (LitT ty) = show ty
-  show (Lit t) = show t
+  show (Lit l) = show l
 
-instance Show Term where
+instance Show Literal where
+  show Top = "☐ "
+  show Kind = "★ "
+  show (Type ty) = show ty
+  show (Term t) = show t
+
+instance Show TermLit where
   show (B b) = show b
-  show (I i) = show i
+  show (N n) = show n
 
-braced :: E -> Bool
+braced :: Expr -> Bool
+braced (Lit l) = False
 braced (Var s) = False
-braced Star = False
-braced Box = False
-braced (LitT ty) = False
-braced (Lit t) = False
 braced _ = True
 
 brace :: String -> String
 brace s = "(" ++ s ++ ")"
 
-maybrace :: E -> String
+maybrace :: Expr -> String
 maybrace x = if braced x then brace (show x) else show x
