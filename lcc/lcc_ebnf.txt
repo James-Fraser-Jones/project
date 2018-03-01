@@ -27,7 +27,7 @@ type_lit = "Bool" | "Nat" ;
 
 lit = box | star | type_lit | term_lit ;
 
-var = lower { lower | digit } ;
+var = lower { lower | digit } | "_" ;
 
 expr_no_app = "(" expr ")"
             | lam var ":" expr "." expr

@@ -148,6 +148,7 @@ lit = box  *> pure Top
 
 var :: Parser Name
 var = (:) <$> lower <*> (many (lower <|> digit))
+  <|> (string "_")
 
 exprNoApp :: Parser Expr
 exprNoApp = parens expr
@@ -158,9 +159,24 @@ exprNoApp = parens expr
 
 expr :: Parser Expr
 expr = chainl1 exprNoApp app
-  where
-    app = char '@' *> pure App
+  where app = char '@' *> pure App
+
+polyId = "\\a:*.\\x:a.x" --polymorphic identity function for terms of type a
+polyIdType = "^a:*.^_:a.a" --type of polymorphic identity function for terms of type a
+
+fmapType = "^f:(^_:*.*).^a:*.^b:*.(^_:(^_:a.b).(^_:f @ a.f @ b))" --fmap :: (a -> b) -> f a -> f b
+fmapTypeB = "^f:^_:*.*.^a:*.^b:*.^_:^_:a.b.^_:f @ a.f @ b" --fmap definition without brackets parsed the same way
+listType = "^_:*.*"
+
+getType' s = getType [] (runParserW expr s)
+
+--fmap :: ∀f:    (* -> *) . (∀a:* .(∀b:*. (   (a -> b) -> (    f a -> f b))))
+--        Πf:(Πx:★  . ★) . (Πa:★.(Πb:★.(Πx:(Πx:a.b)  . (Πx:(f a) . f b))))
+
+--application is left associative but type constrction is right associative, not certain that this is correct in my parser
 
 -- parse expr "\\a:*.\\x:a.x"
 -- runParser expr "x@(1@3)@\\a:x@b.\\x:a.x"
 -- runParserW expr "x @ (hey @ *) @ \\a:x @ Box.\\x:a.x"
+
+--maybe add the ability to use captial lambda? maybe not.

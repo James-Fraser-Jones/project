@@ -8,7 +8,7 @@ instance Show Expr where
   show (App x y) = (maybrace x) ++ " " ++ (maybrace y)
   --lam rule
   show (Lam s e1 e2) = "λ" ++ s ++ ":" ++ (maybrace e1) ++ "." ++ (show e2)
-  --dep rule
+  --dep rules
   show (Dep s e1 e2) = "Π" ++ s ++ ":" ++ (maybrace e1) ++ "." ++ (show e2)
   --variables
   show (Var s) = s
