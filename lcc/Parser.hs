@@ -10,9 +10,13 @@ import Control.Applicative hiding (some, many)
 import Control.Monad
 
 --heavily inspired by http://dev.stephendiehl.com/fun/002_parsers.html
+--and uob language engineering material
 
-------------------------------------------------
+--------------------------------------------------------------------------------
 --Basic parsers and parser combinators
+
+removeW :: String -> String
+removeW = foldr (\c cs -> if isSpace c then cs else c:cs) []
 
 newtype Parser a = Parser { parse :: String -> [(a, String)] }
 
@@ -22,6 +26,9 @@ runParser m s =
     [(res, [])] -> res
     [(_, rs)]   -> error "Parser did not consume entire stream."
     _           -> error "Parser error."
+
+runParserW :: Parser a -> String -> a
+runParserW m s = runParser m (removeW s)
 
 instance Functor Parser where
  fmap f (Parser cs) = Parser (\s -> [(f a, b) | (a, b) <- cs s]) --I've kinda forgotten how list comprehensions work
@@ -46,7 +53,7 @@ some v = some_v
     many_v = some_v <|> pure []
     some_v = (:) <$> v <*> many_v
 
-many :: Parser a -> Parser [a] --
+many :: Parser a -> Parser [a]
 many v = many_v
   where
     many_v = some_v <|> pure []
@@ -63,7 +70,7 @@ satisfy p = item >>= \c ->
     then pure c
     else empty
 
-------------------------------------------------
+--------------------------------------------------------------------------------
 --Higher order parsers
 
 char :: Char -> Parser Char
@@ -82,16 +89,16 @@ chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a --this was taken from Ja
 chainl1 p op = foldl' (flip ($)) <$> p <*> many (flip <$> op <*> p)
 
 token :: Parser a -> Parser a
-token px = spaces *> px
+token px = (many $ satisfy isSpace) *> px
 
 parens :: Parser a -> Parser a
 parens px = (char '(') *> px <* (char ')')
 
-------------------------------------------------
+--------------------------------------------------------------------------------
 --Primitives
 
-boolean :: Parser Bool
-boolean = read <$> ((string "True") <|> (string "False"))
+bool :: Parser Bool
+bool = read <$> ((string "True") <|> (string "False"))
 
 lower :: Parser Char
 lower = satisfy isLower
@@ -99,11 +106,8 @@ lower = satisfy isLower
 digit :: Parser Char
 digit = satisfy isDigit
 
-natural :: Parser Int
-natural = read <$> some digit
-
-spaces :: Parser String
-spaces = many (satisfy isSpace)
+nat :: Parser Int
+nat = read <$> some digit
 
 lam :: Parser String
 lam = string "λ"
@@ -125,38 +129,38 @@ box = string "☐"
   <|> string "[]"
   <|> string "Box"
 
-------------------------------------------------
---Expression parsers
+--------------------------------------------------------------------------------
+--Expressions
 
 termLit :: Parser TermLit
-termLit = B <$> boolean
-      <|> N <$> natural
+termLit = B <$> bool
+      <|> N <$> nat
 
 typeLit :: Parser TypeLit
 typeLit = (string "Bool") *> pure Bool
       <|> (string "Nat")  *> pure Nat
 
-literal :: Parser Literal
-literal = box  *> pure Top
-      <|> star *> pure Kind
-      <|> Type <$> typeLit
-      <|> Term <$> termLit
+lit :: Parser Literal
+lit = box  *> pure Top
+  <|> star *> pure Kind
+  <|> Type <$> typeLit
+  <|> Term <$> termLit
 
-name :: Parser Name
-name = (:) <$> lower <*> (many (lower <|> digit))
-
-app :: Parser (Expr -> Expr -> Expr)
-app = char '@' *> pure App
+var :: Parser Name
+var = (:) <$> lower <*> (many (lower <|> digit))
 
 exprNoApp :: Parser Expr
 exprNoApp = parens expr
-        <|> Lam <$> (lam *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
-        <|> Dep <$> (dep *> name) <*> (char ':' *> expr) <*> (char '.' *> expr)
-        <|> Var <$> name
-        <|> Lit <$> literal
+        <|> Lam <$> (lam *> var) <*> (char ':' *> expr) <*> (char '.' *> expr)
+        <|> Dep <$> (dep *> var) <*> (char ':' *> expr) <*> (char '.' *> expr)
+        <|> Var <$> var
+        <|> Lit <$> lit
 
 expr :: Parser Expr
 expr = chainl1 exprNoApp app
+  where
+    app = char '@' *> pure App
 
 -- parse expr "\\a:*.\\x:a.x"
 -- runParser expr "x@(1@3)@\\a:x@b.\\x:a.x"
+-- runParserW expr "x @ (hey @ *) @ \\a:x @ Box.\\x:a.x"
