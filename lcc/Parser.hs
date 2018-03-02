@@ -2,6 +2,8 @@ module Parser where
 
 import Types
 
+import Prelude hiding (pi)
+
 import Data.Char
 import Data.Foldable (foldl')
 import Data.Functor
@@ -88,6 +90,25 @@ oneOf s = satisfy (flip elem s)
 chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a --this was taken from Jamie
 chainl1 p op = foldl' (flip ($)) <$> p <*> many (flip <$> op <*> p)
 
+chainr1 :: Parser a -> Parser (a -> a -> a) -> Parser a
+chainr1 p op = scan
+  where
+    scan = do{ x <- p; rest x }
+    rest x = do{ f <- op; y <- scan; return (f x y)}
+      <|> return x
+
+{-
+chainl1 :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m (a -> a -> a) -> ParsecT s u m a
+chainl1 p op = do{ x <- p; rest x } <|> return x
+  where
+    rest x = do{ f <- op; y <- p; rest (f x y)}
+
+chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a
+chainl1 p op = do { a <- p; rest a } <|> return a
+  where
+    rest a = do{ f <- op; b <- p; rest (f a b)}
+-}
+
 token :: Parser a -> Parser a
 token px = (many $ satisfy isSpace) *> px
 
@@ -96,6 +117,14 @@ parens px = (char '(') *> px <* (char ')')
 
 --------------------------------------------------------------------------------
 --Primitives
+
+box :: Parser String
+box = string "☐"
+  <|> string "[]"
+
+star :: Parser String
+star = string "★"
+   <|> string "*"
 
 bool :: Parser Bool
 bool = read <$> ((string "True") <|> (string "False"))
@@ -111,23 +140,23 @@ nat = read <$> some digit
 
 lam :: Parser String
 lam = string "λ"
+  <|> string "Λ"
   <|> string "\\"
-  <|> string "Lam"
 
-dep :: Parser String
-dep = string "Π"
-  <|> string "^"
-  <|> string "Dep"
+pi :: Parser String
+pi = string "Π"
+ <|> string "^"
 
-star :: Parser String
-star = string "★"
-   <|> string "*"
-   <|> string "Star"
+forA :: Parser String
+forA = string "∀"
+  <|> string "\\/"
 
-box :: Parser String
-box = string "☐"
-  <|> string "[]"
-  <|> string "Box"
+arr :: Parser String
+arr = string "→"
+  <|> string "->"
+
+app :: Parser String
+app = string "@"
 
 --------------------------------------------------------------------------------
 --Expressions
@@ -150,33 +179,52 @@ var :: Parser Name
 var = (:) <$> lower <*> (many (lower <|> digit))
   <|> (string "_")
 
-exprNoApp :: Parser Expr
-exprNoApp = parens expr
-        <|> Lam <$> (lam *> var) <*> (char ':' *> expr) <*> (char '.' *> expr)
-        <|> Dep <$> (dep *> var) <*> (char ':' *> expr) <*> (char '.' *> expr)
-        <|> Var <$> var
-        <|> Lit <$> lit
+exprNoL :: Parser Expr
+exprNoL = parens expr
+      <|> Lam <$> (lam *> var) <*> (char ':' *> expr) <*> (char '.' *> expr)
+      <|> Pi  <$> ((pi <|> forA) *> var) <*> (char ':' *> expr) <*> (char '.' *> expr)
+      <|> Var <$> var
+      <|> Lit <$> lit
 
-expr :: Parser Expr
-expr = chainl1 exprNoApp app
-  where app = char '@' *> pure App
+exprApp :: Parser Expr
+exprApp = chainl1 exprNoL (app *> pure App)
+
+expr :: Parser Expr --arrow operator has the higher prescedence than application or any other operator
+expr = chainr1 exprApp (arr *> pure arrow)
+  where arrow e1 e2 = Pi "_" e1 e2
+
+--------------------------------------------------------------------------------
+--Examples
 
 polyId = "\\a:*.\\x:a.x" --polymorphic identity function for terms of type a
 polyIdType = "^a:*.^_:a.a" --type of polymorphic identity function for terms of type a
 
 fmapType = "^f:(^_:*.*).^a:*.^b:*.(^_:(^_:a.b).(^_:f @ a.f @ b))" --fmap :: (a -> b) -> f a -> f b
 fmapTypeB = "^f:^_:*.*.^a:*.^b:*.^_:^_:a.b.^_:f @ a.f @ b" --fmap definition without brackets parsed the same way
+
+fmapTypeC = "∀f:* -> *.∀a:*.∀b:*.(a -> b) -> f @ a -> f @ b" --since arrow operator has highest prescedence, brackets are
+--not necessary around the applications f a and f b
+
 listType = "^_:*.*"
 
-getType' s = getType [] (runParserW expr s)
+getExpr' = runParserW expr
+getType' = (getType []).getExpr'
 
---fmap :: ∀f:    (* -> *) . (∀a:* .(∀b:*. (   (a -> b) -> (    f a -> f b))))
---        Πf:(Πx:★  . ★) . (Πa:★.(Πb:★.(Πx:(Πx:a.b)  . (Πx:(f a) . f b))))
+{-
+fmap :: ∀f:    (* -> *) . (∀a:* .(∀b:*. (   (a -> b) -> (    f a -> f b))))
+        Πf:(Πx:★  . ★) . (Πa:★.(Πb:★.(Πx:(Πx:a.b)  . (Πx:(f a) . f b))))
 
---application is left associative but type constrction is right associative, not certain that this is correct in my parser
+application is left associative but type constrction is right associative, not certain that this is correct in my parser
+right associative type contruction only matters when you're parsing (a -> b -> c) otherwise this would be:
+ ^_:a.^_:b.c which is not ambiguous since the left associative version would look like this: ^_:^_:a.b.c
 
--- parse expr "\\a:*.\\x:a.x"
--- runParser expr "x@(1@3)@\\a:x@b.\\x:a.x"
--- runParserW expr "x @ (hey @ *) @ \\a:x @ Box.\\x:a.x"
+application interacts with pi in exactly the same way that it interacts with lam
+the reason that (* -> *) becomes Π_:*.*) is because there aren't any variables to be replaced with an expression in the second
+input (namely, *) hence, we don't need to use any particular variable name since we know it can never be used during application
+the type of a polymorphic function, for instance can become the type of a non-polymophic instance of that function when you
+feed it a concrete type as input, in this way application is used and the Pi behaves as a function (like lam)
 
---maybe add the ability to use captial lambda? maybe not.
+parse expr "\\a:*.\\x:a.x"
+runParser expr "x@(1@3)@\\a:x@b.\\x:a.x"
+runParserW expr "x @ (hey @ *) @ \\a:x @ Box.\\x:a.x"
+-}

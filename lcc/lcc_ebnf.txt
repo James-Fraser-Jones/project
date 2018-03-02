@@ -1,7 +1,8 @@
-# This is successfully parsed at: http://www.icosaedro.it/bnf_chk/bnf_chk-on-line.html
-# Curly {} braces correspond to "many", backslash is escaped, alternative lam and dep symbols are commented out, commas are ommited
-
 #----------------------------Primitives-------------------------------------
+box = "☐" | "[]";
+
+star = "★" | "*";
+
 bool = "True" | "False" ;
 
 lower = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j"
@@ -14,11 +15,13 @@ nat = digit { digit } ;
 
 lam = "λ" | "\\" | "Lam" ;
 
-dep = "Π" | "^" | "Dep" ;
+pi = "Π" | "^" | "Pi" ;
 
-star = "★" | "*" | "Star" ;
+for_a = "∀" | "\\/" ;
 
-box = "☐" | "[]" | "Box" ;
+arr = "→" | "->" ;
+
+app = "@" ;
 
 #----------------------------Expressions-------------------------------------
 term_lit = bool | nat ;
@@ -29,10 +32,12 @@ lit = box | star | type_lit | term_lit ;
 
 var = lower { lower | digit } | "_" ;
 
-expr_no_app = "(" expr ")"
-            | lam var ":" expr "." expr
-            | dep var ":" expr "." expr
-            | var
-            | lit ;
+expr_no_l = "(" expr ")"
+          | lam var ":" expr "." expr
+          | pi var ":" expr "." expr
+          | var
+          | lit ;
 
-expr = expr_no_app { "@" expr_no_app } ;
+expr_app = expr_no_l { app expr_no_l } ;
+
+expr = expr_app { arr expr_app } ;
