@@ -39,8 +39,11 @@ getType c (Var s) =
     "_" -> Nothing    --nameless variable for use with normal and term types
     _   -> lookup s c --lookup behaves correctly with "add" function
 
---getType c (App p q) = if then (sub a x b') else Nothing
---  where (Pi x a r) = (getType c p)
+getType c (App (Lam x a b) q) = if and[isJust b', isJust q', fromJust q' == a] then Just (sub a x (fromJust b')) else Nothing
+  where b' = (getType (add x a c) b)
+        q' = (getType c q)
+
+getType c (App _ _) = Nothing --this makes fmap definition have type nothing too 
 
 getType c (Lam x a b) = if and[isJust b', starBox t] then Just pi else Nothing
   where b' = (getType (add x a c) b)

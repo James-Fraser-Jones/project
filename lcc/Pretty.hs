@@ -56,4 +56,8 @@ one that will be referenced in the show function. I will have to consider this. 
 possibly more useful to have the type of every expression.
 
 I definiely think you should do it for every expression at the moment.
+
+Also, I can't do a quick fix with this and call "getType" during every "show" call because I also need the relevent Context
+which I don't have when show is called in the recursive way it is since no data is passed to it from the previous show function
+about the context.
 -}

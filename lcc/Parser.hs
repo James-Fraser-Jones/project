@@ -97,18 +97,6 @@ chainr1 p op = scan
     rest x = do{ f <- op; y <- scan; return (f x y)}
       <|> return x
 
-{-
-chainl1 :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m (a -> a -> a) -> ParsecT s u m a
-chainl1 p op = do{ x <- p; rest x } <|> return x
-  where
-    rest x = do{ f <- op; y <- p; rest (f x y)}
-
-chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a
-chainl1 p op = do { a <- p; rest a } <|> return a
-  where
-    rest a = do{ f <- op; b <- p; rest (f a b)}
--}
-
 token :: Parser a -> Parser a
 token px = (many $ satisfy isSpace) *> px
 
