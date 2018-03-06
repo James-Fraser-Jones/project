@@ -79,3 +79,6 @@ http://www.cse.chalmers.se/~ulfn/papers/thesis.pdf
 
 %Paper on parsing which explains how to use chainl1
 https://eprints.nottingham.ac.uk/223/1/pearl.pdf
+
+%de brujin indecies
+https://pdfs.semanticscholar.org/15d1/fc255f683f132b24da82c1b162d2a105449e.pdf
