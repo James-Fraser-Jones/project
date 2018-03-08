@@ -1,0 +1,12 @@
+(λy.P)[x:=N] ≡ λy.(P[x:=N])        if x≠y, y∉FV(N)
+(λy.P)[x:=N] ≡ λz.(P[x:=N][y:=z])  if x≠y, y∈FV(N)
+
+------------------------------------------------------ where z∉(FV(N) ∪ FV(P)) (in below case) and z∉(FV(N) ∪ FV(P) ∪ {x}) (in above case)
+
+(λy.P)[x:=N] ≡ (λy.P)              if x≠y, x∉FV(P)
+
+(λy.P)[x:=N] ≡ λy.(P[x:=N])        if x≠y, x∈FV(P), y∉FV(N)
+(λy.P)[x:=N] ≡ λz.(P[x:=N][y:=z])  if x≠y, x∈FV(P), y∈FV(N)
+
+I think I'll just do the below case cause it's straight from the book:
+http://pds14.egloos.com/pds/200901/16/93/Lambda-Calculus_and_Combinators.pdf (page 7, or 21)

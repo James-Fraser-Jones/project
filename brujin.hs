@@ -21,25 +21,25 @@ instance Show Brexpr where
   show (Lam e1) = "λ " ++ (show e1)
   show (Var i) = show i
 
---ex1: (λ λ 4 2 (λ 1 3)) (λ 5 1)
+--ex1: (λ λ 4 2 (λ 1 3)) (λ 5 1) beta reduces to: λ 3 (λ 6 1) (λ 1 (λ 7 1))
 ex1 = App (Lam (Lam (App (App (Var 4) (Var 2)) (Lam (App (Var 1) (Var 3)))))) (Lam (App (Var 5) (Var 1)))
---this should beta reduce to: λ 3 (λ 6 1) (λ 1 (λ 7 1))
---                       not: λ 3 (λ 7 3) (λ 1 (λ 8 4))
------------------------------------------------------------------------
 
+--this increments all the "free" variables within an expression, the higher k is, the fewer variables are considered free
 inc :: Brexpr -> Int -> Index -> Brexpr
 inc     (Var i) n k = Var $ i + (if i < k then 0 else n)
 inc (App e1 e2) n k = App (inc e1 n k) (inc e2 n k)
 inc    (Lam e1) n k = Lam $ inc e1 n (k+1)
 
+--this substitutes all variables referencing the same lam with an expression, e, and corrects all indecies to avoid capture
 sub :: Brexpr -> Index -> Brexpr -> Brexpr
 sub (Var i) k e
   |  i < k          = Var i
-  | i == k          = inc e k 0
+  | i == k          = inc e (k-1) 1 --this had to be changed from "inc e k 0" to work correctly
   |  i > k          = Var $ i - 1
 sub (App e1 e2) k e = App (sub e1 k e) (sub e2 k e)
 sub    (Lam e1) k e = Lam $ sub e1 (k+1) e
 
+--performs beta reduction, if possible
 beta :: Brexpr -> Brexpr
-beta (App (Lam e1) e) = sub e1 1 e
+beta (App (Lam e1) e) = sub e1 1 e --"1" represents all variables which were bound by the Lam in "Lam e1"
 beta e = e
