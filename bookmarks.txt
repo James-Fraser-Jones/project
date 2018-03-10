@@ -82,3 +82,9 @@ https://eprints.nottingham.ac.uk/223/1/pearl.pdf
 
 %de brujin indecies
 https://pdfs.semanticscholar.org/15d1/fc255f683f132b24da82c1b162d2a105449e.pdf
+
+%Implementations of CoC:
+https://hackage.haskell.org/package/morte-1.6.16/docs/Morte-Tutorial.html
+http://www.haskellforall.com/2014/09/morte-intermediate-language-for-super.html
+https://www.andres-loeh.de/LambdaPi/LambdaPi.pdf
+https://gist.github.com/ChristopherKing42/d8c9fde0869ec5c8feae71714e069214

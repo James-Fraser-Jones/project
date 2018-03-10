@@ -24,11 +24,14 @@ instance Show Brexpr where
 --ex1: (λ λ 4 2 (λ 1 3)) (λ 5 1) beta reduces to: λ 3 (λ 6 1) (λ 1 (λ 7 1))
 ex1 = App (Lam (Lam (App (App (Var 4) (Var 2)) (Lam (App (Var 1) (Var 3)))))) (Lam (App (Var 5) (Var 1)))
 
---this increments all the "free" variables within an expression, the higher k is, the fewer variables are considered free
-shift :: Brexpr -> Int -> Index -> Brexpr
-shift     (Var i) n k = Var $ i + (if i < k then 0 else n)
-shift (App e1 e2) n k = App (shift e1 n k) (shift e2 n k)
-shift    (Lam e1) n k = Lam $ shift e1 n (k+1)
+--all variables that reference the k'th lambda are are shifted by n (lambda 0 and lower are referenced by free variables)
+shift :: Index -> Brexpr -> Int -> Brexpr
+shift k     (Var i) n = Var $ i + (if i > k then n else 0)
+shift k (App e1 e2) n = App (shift k e1 n) (shift k e2 n)
+shift k    (Lam e1) n = Lam $ shift (k+1) e1 n
+
+--all free variables are shifted
+shiftFree = shift 0
 
 {-
 This function substitutes all variables in expression, a, that reference the removed lam with an expression, e.
@@ -38,9 +41,9 @@ Because of this, its functionality is only correct in the context of it being ca
 -}
 sub :: Brexpr -> Index -> Brexpr -> Brexpr
 sub (Var i) k e
-  |  i < k          = Var i
-  | i == k          = shift e (k-1) 1 --this had to be changed from "inc e k 0" to correct two seperate problems
-  |  i > k          = Var $ i - 1
+  |  i < k          = Var i             --do nothing to bound variables which reference a different lambda
+  | i == k          = shiftFree e (k-1) --replace correct variables with e and shift free variables of e to prevent capture
+  |  i > k          = Var $ i - 1       --decrement free variables to compensate for lambda being removed during beta reduction
 sub (App e1 e2) k e = App (sub e1 k e) (sub e2 k e)
 sub    (Lam e1) k e = Lam $ sub e1 (k+1) e
 
@@ -55,4 +58,35 @@ Changing k to k-1 fixes this.
 The second problem was that bound variables with an index of 1 were being incremented because of the
 conditional logic in the shift function.
 Changing 0 to 1 fixes this. As does changing "<" to "<=" in the shift function itself.
+
+About debrujin indecies:
+
+Lambda expressions represent binary trees with lambdas scattered throughout them.
+Down any single branch of this tree there will be a certain number of lambdas along this path.
+Any variable along this path can reference one of the lambdas above it (in which case it is bound).
+Or it may reference a lambda in an imaginary path which extends higher than the tree itself (in which case it is free).
+
+The (global) lambda that a variable references depends on the index (a positive, non-zero, integer),
+AND the depth of lambdas that it exists underneath.
+For instance, a variable "1" which exists at depth "1" (i.e. under 1 lambda) references the 1-1 (+1) = 1st lambda
+
+A variable "1" which exists at depth "2" references the 2-1 (+1) = 2nd lambda
+
+A variable "2" which exists at depth "1" references the (imaginary) 1-2 (+1) = 0th lambda (this variable is actually free)
+
+A variable "2" which exists at depth "2" again references the first lambda.
+
+So there are effectively global ids for lambdas and variables reference these with context specific indecies
+which take their global depth into account.
+
+It is possible to reference any lambda above a variable from any depth due to:
+Lambda = Depth - Index
+
+0 = 1-1 = 2-2 = 3-3 = 4-4 = 5-5 = 6-6 = 7-7 ...
+-1 = 1-2 = 2-3 = 3-4 = 4-5
+
+Technically speaking, it would be possible to reference lambdas beneath a variable if we used negative indecies, the
+problem with this however is that the binary tree strcture means that application would make it impossible to know which
+of the two possible branches to go down when we are looking for a lambda that the variable is referencing.
+
 -}
