@@ -24,7 +24,9 @@ instance Show Brexpr where
 --ex1: (λ λ 4 2 (λ 1 3)) (λ 5 1) beta reduces to: λ 3 (λ 6 1) (λ 1 (λ 7 1))
 ex1 = App (Lam (Lam (App (App (Var 4) (Var 2)) (Lam (App (Var 1) (Var 3)))))) (Lam (App (Var 5) (Var 1)))
 
---all variables that reference the k'th lambda are are shifted by n (lambda 0 and lower are referenced by free variables)
+--ex2: 1 (λ 1 (λ 1 (λ 1 (λ 1))))
+ex2 = App (Var 1) (Lam (App (Var 1) (Lam (App (Var 1) (Lam (App (Var 1) (Lam (Var 1))))))))
+
 shift :: Index -> Brexpr -> Int -> Brexpr
 shift k     (Var i) n = Var $ i + (if i > k then n else 0)
 shift k (App e1 e2) n = App (shift k e1 n) (shift k e2 n)
