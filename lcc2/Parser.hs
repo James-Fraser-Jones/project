@@ -3,11 +3,9 @@ module Parser where
 import Types
 
 import Prelude hiding (pi)
-
 import Data.Char
 import Data.Foldable (foldl')
 import Data.Functor
-
 import Control.Applicative hiding (some, many)
 import Control.Monad
 
@@ -16,10 +14,6 @@ import Control.Monad
 
 --------------------------------------------------------------------------------
 --Basic parsers and parser combinators
-
-removeW :: String -> String
-removeW = foldr (\c cs -> if isSpace c then cs else c:cs) []
-
 newtype Parser a = Parser { parse :: String -> [(a, String)] }
 
 runParser :: Parser a -> String -> a
@@ -28,9 +22,6 @@ runParser m s =
     [(res, [])] -> res
     [(_, rs)]   -> error "Parser did not consume entire stream."
     _           -> error "Parser error."
-
-runParserW :: Parser a -> String -> a
-runParserW m s = runParser m (removeW s)
 
 instance Functor Parser where
  fmap f (Parser cs) = Parser (\s -> [(f a, b) | (a, b) <- cs s]) --I've kinda forgotten how list comprehensions work
@@ -128,16 +119,11 @@ nat = read <$> some digit
 
 lam :: Parser String
 lam = string "λ"
-  <|> string "Λ"
   <|> string "\\"
 
 pi :: Parser String
 pi = string "Π"
  <|> string "^"
-
-forA :: Parser String
-forA = string "∀"
-  <|> string "\\/"
 
 arr :: Parser String
 arr = string "→"
@@ -163,56 +149,24 @@ lit = box  *> pure Top
   <|> Type <$> typeLit
   <|> Term <$> termLit
 
-var :: Parser Name
-var = (:) <$> lower <*> (many (lower <|> digit))
-  <|> (string "_")
+name :: Parser Name
+name = (:) <$> lower <*> (many (lower <|> digit))
+
+var :: Parser Var
+var = (flip (,) 0) <$> name
 
 exprNoL :: Parser Expr
 exprNoL = parens expr
-      <|> Lam <$> (lam *> var) <*> (char ':' *> expr) <*> (char '.' *> expr)
-      <|> Pi  <$> ((pi <|> forA) *> var) <*> (char ':' *> expr) <*> (char '.' *> expr)
+      <|> Lam <$> (lam *> (Just <$> name)) <*> (char ':' *> expr) <*> (arr *> expr)
+      <|> Lam <$> (lam *>   pure Nothing ) <*>              expr  <*> (arr *> expr)
+      <|> Pi  <$> ( pi *> (Just <$> name)) <*> (char ':' *> expr) <*> (arr *> expr)
+      <|> Pi  <$> ( pi *>   pure Nothing ) <*>              expr  <*> (arr *> expr)
       <|> Var <$> var
       <|> Lit <$> lit
 
-exprApp :: Parser Expr
-exprApp = chainl1 exprNoL (app *> pure App)
+expr :: Parser Expr
+expr = chainl1 exprNoL (app *> pure App)
 
-expr :: Parser Expr --arrow operator has the higher prescedence than application or any other operator
-expr = chainr1 exprApp (arr *> pure arrow)
-  where arrow e1 e2 = Pi "_" e1 e2
-
---------------------------------------------------------------------------------
---Examples
-
-polyId = "\\a:*.\\x:a.x" --polymorphic identity function for terms of type a
-polyIdType = "^a:*.^_:a.a" --type of polymorphic identity function for terms of type a
-
-fmapType = "^f:(^_:*.*).^a:*.^b:*.(^_:(^_:a.b).(^_:f @ a.f @ b))" --fmap :: (a -> b) -> f a -> f b
-fmapTypeB = "^f:^_:*.*.^a:*.^b:*.^_:^_:a.b.^_:f @ a.f @ b" --fmap definition without brackets parsed the same way
-
-fmapTypeC = "∀f:* -> *.∀a:*.∀b:*.(a -> b) -> f @ a -> f @ b" --since arrow operator has highest prescedence, brackets are
---not necessary around the applications f a and f b
-
-listType = "^_:*.*"
-
-getExpr' = runParserW expr
-getType' = (getType []).getExpr'
-
-{-
-fmap :: ∀f:    (* -> *) . (∀a:* .(∀b:*. (   (a -> b) -> (    f a -> f b))))
-        Πf:(Πx:★  . ★) . (Πa:★.(Πb:★.(Πx:(Πx:a.b)  . (Πx:(f a) . f b))))
-
-application is left associative but type constrction is right associative, not certain that this is correct in my parser
-right associative type contruction only matters when you're parsing (a -> b -> c) otherwise this would be:
- ^_:a.^_:b.c which is not ambiguous since the left associative version would look like this: ^_:^_:a.b.c
-
-application interacts with pi in exactly the same way that it interacts with lam
-the reason that (* -> *) becomes Π_:*.*) is because there aren't any variables to be replaced with an expression in the second
-input (namely, *) hence, we don't need to use any particular variable name since we know it can never be used during application
-the type of a polymorphic function, for instance can become the type of a non-polymophic instance of that function when you
-feed it a concrete type as input, in this way application is used and the Pi behaves as a function (like lam)
-
-parse expr "\\a:*.\\x:a.x"
-runParser expr "x@(1@3)@\\a:x@b.\\x:a.x"
-runParserW expr "x @ (hey @ *) @ \\a:x @ Box.\\x:a.x"
--}
+getExpr :: String -> Expr
+getExpr s = sindex $ runParser expr (removeW s)
+  where removeW = foldr (\c cs -> if isSpace c then cs else c:cs) []

@@ -1,97 +1,51 @@
 module Types where
 
 import Data.Maybe
-import Data.Set (Set)
-import qualified Data.Set as Set
-import Data.Functor
 
 type Name = String
-type Context = [(Name, Expr)] --the expr represented by each var has type expr
+type Index = Int
+type Var = (Name, Index)
+type IndexCon = [Var]
 
-data Expr = Lit Literal | Var Name | App Expr Expr | Lam Name Expr Expr | Pi Name Expr Expr deriving Eq
+data Expr = Lit Literal | Var Var | App Expr Expr | Lam (Maybe Name) Expr Expr | Pi (Maybe Name) Expr Expr deriving Eq
 data Literal = Top | Kind | Type TypeLit | Term TermLit deriving Eq
 data TypeLit = Bool | Nat deriving (Eq, Show)
 data TermLit = B Bool | N Int deriving Eq
 
-starBox :: Maybe Expr -> Bool
-starBox (Just (Lit Top)) = True
-starBox (Just (Lit Kind)) = True
-starBox _ = False
+shift :: Index -> Int -> Expr -> Expr
+shift k n (Var (s, i)) = Var (s, i + (if i > k then n else 0))
+shift k n (Lam s e1 e2) = Lam s (shift (k+1) n e1) (shift (k+1) n e2) --is it actually correct to also recurse down e1 here?
+shift k n (App e1 e2) = App (shift k n e1) (shift k n e2)
+shift _ _ (Lit l) = Lit l
+--do I add a rule for pi? does it make sense to do beta reduction with pis?
 
-add :: Name -> Expr -> Context -> Context
-add "_" _ c = c --don't add empty named variables to the context
-add  s  e c = (s,e):c
+--all free variables are shifted
+shiftFree = shift 0
 
-litType :: Literal -> Maybe Expr
-litType (Term t) =
-  case t of
-    (B _) -> Just $ Lit (Type Bool)
-    (N _) -> Just $ Lit (Type Nat)
-litType (Type _) = Just $ Lit Kind
-litType    Kind  = Just $ Lit Top
-litType     Top  = Nothing
+sub :: Index -> Expr -> Expr -> Expr
+sub k e (Var (s, i))
+  |  i < k = Var (s, i)
+  | i == k = shiftFree (k-1) e
+  |  i > k = Var (s, i-1)
+sub k e (Lam s e1 e2) = Lam s (sub (k+1) e e1) (sub (k+1) e e2)
+sub k e (App e1 e2) = App (sub k e e1) (sub k e e2)
+sub _ _ (Lit l) = Lit l
 
-getType :: Context -> Expr -> Maybe Expr
-getType _ (Lit l) = litType l
+beta :: Expr -> Expr
+beta (App (Lam (Just s) _ e2) e) = sub 1 e e2
+beta (App (Lam  Nothing _ e2) _) = e2
+beta (App e1 e2) = App (beta e1) (beta e2)
+beta (Lam s e1 e2) = Lam s (beta e1) (beta e2)
+beta e = e
 
-getType c (Var s) =
-  case s of
-    "_" -> Nothing    --nameless variable for use with normal and term types
-    _   -> lookup s c --lookup behaves correctly with "add" function
+index :: IndexCon -> Index -> Expr -> Expr
+index c i (Var (s,_)) =
+  case lookup s c of
+    Nothing  -> Var (s,i+1) --variable is free
+    (Just n) -> Var (s,i-n) --variable is bound
+index c i (Lam (Just s) e1 e2) = Lam (Just s) (index ((s,i):c) (i+1) e1) (index ((s,i):c) (i+1) e2)
+index c i (Lam  Nothing e1 e2) = Lam  Nothing (index        c  (i+1) e1) (index        c  (i+1) e2)
+index c i (App e1 e2) = App (index c i e1) (index c i e2)
+index _ _ (Lit l) = Lit l
 
-getType c (App (Lam x a b) q) = if and[isJust b', isJust q', fromJust q' == a] then Just (sub a x (fromJust b')) else Nothing
-  where b' = (getType (add x a c) b)
-        q' = (getType c q)
-
-getType c (App _ _) = Nothing --this makes fmap definition have type nothing too 
-
-getType c (Lam x a b) = if and[isJust b', starBox t] then Just pi else Nothing
-  where b' = (getType (add x a c) b)
-        pi = (Pi x a (fromJust b')) --this doesn't crash when b' is nothing because of the "and" condition above
-        t = (getType c pi)
-
-getType c (Pi x a b) = if and[starBox s, starBox t] then t else Nothing
-  where s = (getType c a)
-        t = (getType (add x a c) b)
-
--------------------------------------------------------------------------------------------------------------------
---This is the section where we define substitution and beta reduction
-
-fvars :: Expr -> Set Name --get a set containing every instance of a free variable in the expression
-fvars (Lit l) = Set.empty
-fvars (Var "_") = Set.empty
-fvars (Var a) = Set.singleton a
-fvars (App p q) = Set.union (fvars p) (fvars q)
-fvars (Lam x t p) = Set.delete x (fvars p)
-fvars (Pi  x t p) = Set.delete x (fvars p)
-
-vars :: [Name]
-vars = (\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem 26) <$> [0..]
-
-fresh :: Set Name -> Name --given a set of used variable names, return a fresh variable from an infinite list
-fresh s = head $ filter (flip Set.notMember s) vars
-
-sub :: Expr -> Name -> Expr -> Expr
-sub n x p = sub' (fvars n) n x p
-
---In order: Free variables of N, N (the expression to be subbed in), x (the variable to sub out), E (the expression being subbed into)
-sub' :: Set Name -> Expr -> Name -> Expr -> Expr
-sub' fvn n x (Lit l) = Lit l
-sub' fvn n x (Var a) = if x == a then n else Var a
-sub' fvn n x (App p q) = App (sub' fvn n x p) (sub' fvn n x q)
-
-sub' fvn n x (Lam y t p) =
-  if                x == y then Lam y t p                else
-    if Set.notMember y fvn then Lam y t (sub' fvn n x p) else
-                                Lam z t (sub' fvn n x p')
-                                where p' = (sub (Var z) y p)
-                                      z = fresh (Set.insert x (Set.union fvn fvp))
-                                      fvp = fvars p
-
-sub' fvn n x (Pi y t p) =
-  if                x == y then Pi y t p                else
-    if Set.notMember y fvn then Pi y t (sub' fvn n x p) else
-                                Pi z t (sub' fvn n x p')
-                                where p' = (sub (Var z) y p)
-                                      z = fresh (Set.insert x (Set.union fvn fvp))
-                                      fvp = fvars p
+sindex = index [] 0
