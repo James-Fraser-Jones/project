@@ -88,3 +88,9 @@ https://hackage.haskell.org/package/morte-1.6.16/docs/Morte-Tutorial.html
 http://www.haskellforall.com/2014/09/morte-intermediate-language-for-super.html
 https://www.andres-loeh.de/LambdaPi/LambdaPi.pdf
 https://gist.github.com/ChristopherKing42/d8c9fde0869ec5c8feae71714e069214
+
+%Another great paper on the Lambda Cube and Pure type Systems
+http://www.diku.dk/hjemmesider/ansatte/henglein/papers/barendregt1991.pdf
+
+%Implementing typeclasses in lambda calculus
+https://stackoverflow.com/questions/8925103/embedding-higher-kinded-types-monads-into-the-untyped-lambda-calculus/8936209#8936209
