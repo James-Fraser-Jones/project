@@ -14,6 +14,7 @@ https://en.wikipedia.org/wiki/Functional_programming
 https://en.wikipedia.org/wiki/Haskell_(programming_language)
 
 % Introductions to Lambda Calculus.
+http://www.cse.chalmers.se/research/group/logic/TypesSS05/Extra/geuvers.pdf
 ftp://ftp.cs.ru.nl/pub/CompMath.Found/lambda.pdf
 https://classes.soe.ucsc.edu/cmps112/Spring03/readings/lambdacalculus/project3.html
 
@@ -80,7 +81,7 @@ http://www.cse.chalmers.se/~ulfn/papers/thesis.pdf
 %Paper on parsing which explains how to use chainl1
 https://eprints.nottingham.ac.uk/223/1/pearl.pdf
 
-%de brujin indecies
+%de-brujin indecies
 https://pdfs.semanticscholar.org/15d1/fc255f683f132b24da82c1b162d2a105449e.pdf
 
 %Implementations of CoC:
@@ -94,3 +95,9 @@ http://www.diku.dk/hjemmesider/ansatte/henglein/papers/barendregt1991.pdf
 
 %Implementing typeclasses in lambda calculus
 https://stackoverflow.com/questions/8925103/embedding-higher-kinded-types-monads-into-the-untyped-lambda-calculus/8936209#8936209
+
+%Implementation of "the rapier" ghc's named capture avoidance strategy
+https://www.microsoft.com/en-us/research/wp-content/uploads/2002/07/inline.pdf
+
+%"Bound" Haskell library for capture avoidance
+https://www.schoolofhaskell.com/user/edwardk/bound
