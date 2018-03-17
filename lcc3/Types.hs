@@ -60,6 +60,10 @@ normalize e = if e == e' then e' else normalize e'
 (===) :: Expr -> Expr -> Bool --beta equivalence
 e1 === e2 = (normalize e1) == (normalize e2)
 -----------------------------------------------------------------------------------------------
+extend :: Maybe Name -> Expr -> Context -> Context
+extend Nothing _ c = c
+extend (Just n) e c = (n,e):c
+
 typeLit :: Lit -> Either TypeError Expr
 typeLit l =
   case l of
@@ -69,26 +73,29 @@ typeLit l =
     (Term (N _)) -> Right $ Lit (Type Nat)
     (Term (B _)) -> Right $ Lit (Type Bool)
 
+typeCheck :: Expr -> Either TypeError Expr
+typeCheck = tC []
+
 tC :: Context -> Expr -> Either TypeError Expr
 tC _ (Lit l) = typeLit l
 tC c (Var x) = if isJust l then Right (fromJust l) else Left LookupError
   where l = lookup x c
-tC c (App (Abs _  Nothing e e') e2) = if e === e2 then tC        c  e' else Left MismatchAppError
-tC c (App (Abs _ (Just n) e e') e2) = if e === e2 then tC ((n,e):c) e' else Left MismatchAppError
-tC _ (App e1 e2) = Left NonAbsAppError
-tC c (Abs Lam Nothing e e') =
-  case (tC c e') of
-    (Left e) -> Left e
-    (Right t) -> Right $ Abs Pi Nothing e t
-tC c (Abs Lam (Just n) e e') =
-  case (tC ((n,e):c) e') of
-    (Left e) -> Left e
-    (Right t) -> Right $ Abs Pi (Just n) e t
-tC c (Abs Pi  Nothing e e') = tC        c  e'
-tC c (Abs Pi (Just n) e e') = tC ((n,e):c) e'
 
-typeCheck :: Expr -> Either TypeError Expr
-typeCheck = tC []
+--I need to double check the following code
+
+tC c (App (Abs _ n e e') e2) =
+  case (tC c e2) of
+    (Left e) -> Left e
+    (Right t) -> if e === t then tC (extend n e c) e' else Left MismatchAppError
+
+tC _ (App _ _) = Left NonAbsAppError --this needs to propagate somehow, the current expression is ((f @ x) @ y)
+
+tC c (Abs Lam n e e') =
+  case (tC (extend n e c) e') of
+    (Left e) -> Left e
+    (Right t) -> Right $ Abs Pi n e t
+
+tC c (Abs Pi n e e') = tC (extend n e c) e'
 -----------------------------------------------------------------------------------------------
 
 {-

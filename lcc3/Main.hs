@@ -11,6 +11,9 @@ polyId = "(\\a:*->\\x:a->x)" --polymorphic identity function for terms of type a
 natId = polyId ++ " @ Nat @ 6"
 boolId = polyId ++ " @ Bool @ True"
 
+test1 = "(λx:Nat → x)"
+test2 = "(\\a:*->\\x:a->x) @ Nat @ 6"
+
 {-
 run' :: Expr -> IO()
 run' e = do
