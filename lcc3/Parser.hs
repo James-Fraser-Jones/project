@@ -2,7 +2,7 @@ module Parser where
 
 import Types
 
-import Prelude hiding (pi)
+import Prelude hiding (pi, abs)
 import Data.Char
 import Data.Foldable (foldl')
 import Data.Functor
@@ -135,6 +135,10 @@ app = string "@"
 --------------------------------------------------------------------------------
 --Expressions
 
+abs :: Parser Abs
+abs = lam *> pure Lam
+  <|> pi  *> pure Pi
+
 term :: Parser Term
 term = B <$> bool
    <|> N <$> nat
@@ -157,10 +161,8 @@ name = (:) <$> lower <*> (many (lower <|> digit))
 
 exprNoL :: Parser Expr
 exprNoL = parens expr
-      <|> Lam <$> (lam *> (Just <$> name)) <*> (char ':' *> expr) <*> (arr *> expr)
-      <|> Lam <$> (lam *>   pure Nothing ) <*>              expr  <*> (arr *> expr)
-      <|> Pi  <$> ( pi *> (Just <$> name)) <*> (char ':' *> expr) <*> (arr *> expr)
-      <|> Pi  <$> ( pi *>   pure Nothing ) <*>              expr  <*> (arr *> expr)
+      <|> Abs <$> abs <*> (Just <$> name) <*> (char ':' *> expr) <*> (arr *> expr)
+      <|> Abs <$> abs <*> (pure Nothing) <*>              expr  <*> (arr *> expr)
       <|> Var <$> name
       <|> Lit <$> lit
 

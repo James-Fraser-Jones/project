@@ -8,15 +8,16 @@ instance Show Expr where
   show (App (App e1 e2) x) = (show (App e1 e2)) ++ " " ++ (maybrace x) --application is left associative
   show (App x y) = (maybrace x) ++ " " ++ (maybrace y)
   --lam rule
-  show (Lam (Just n) e1 e2) = "λ" ++ n ++ ":" ++ (maybrace e1) ++ " → " ++ (show e2)
-  show (Lam Nothing  e1 e2) = "λ" ++             (maybrace e1) ++ " → " ++ (show e2)
-  --pi rules
-  show  (Pi (Just n) e1 e2) = "Π" ++ n ++ ":" ++ (maybrace e1) ++ " → " ++ (show e2)
-  show  (Pi Nothing  e1 e2) = "Π"             ++ (maybrace e1) ++ " → " ++ (show e2)
+  show (Abs a (Just n) e1 e2) = (show a) ++ n ++ ":" ++ (maybrace e1) ++ " → " ++ (show e2)
+  show (Abs a Nothing  e1 e2) = (show a) ++             (maybrace e1) ++ " → " ++ (show e2)
   --variables
   show (Var n) = n
   --literals
   show (Lit l) = show l
+
+instance Show Abs where
+  show Lam = "λ"
+  show Pi = "Π"
 
 instance Show Lit where
   show (Sort s) = show s
@@ -42,3 +43,9 @@ brace s = "(" ++ s ++ ")"
 
 maybrace :: Expr -> String
 maybrace x = if braced x then brace (show x) else show x
+
+instance Show TypeError where
+  show BoxError = "Error: Attempted to get type of Sort ☐"
+  show LookupError = "Error: Attempted to get type of a free variable"
+  show MismatchAppError = "Error: Function is applied to an expression of an incorrect type"
+  show NonAbsAppError = "Error: Non-Function is applied to an expression"

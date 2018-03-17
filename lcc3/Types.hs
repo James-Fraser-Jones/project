@@ -5,27 +5,91 @@ import Data.List
 import Data.Functor
 
 type Name = String
+type Context = [(Name, Expr)]
 
-data Expr = Lit Lit | Var Name | App Expr Expr | Lam (Maybe Name) Expr Expr | Pi (Maybe Name) Expr Expr deriving Eq
+--no distinction is made between abstractions in the expr datatype
+data Expr = Lit Lit | Var Name | App Expr Expr | Abs Abs (Maybe Name) Expr Expr deriving Eq
+
+--the distinction is instead made in the abs datatype
+data  Abs = Lam | Pi deriving Eq
 data  Lit = Sort Sort | Type Type | Term Term deriving Eq
+
 data Sort = Box | Star deriving Eq
 data Type = Bool | Nat deriving (Eq, Show)
 data Term = B Bool | N Int deriving Eq
 
-vars :: [Name]
-vars = (\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem 26) <$> [0..]
-
-fresh :: [Name] -> Name --given a set of used variable names, return a fresh variable from an infinite list
-fresh s = head $ filter (flip notElem s) vars
-
+data TypeError = BoxError
+               | LookupError
+               | MismatchAppError
+               | NonAbsAppError
+-----------------------------------------------------------------------------------------------
 freeVars :: Expr -> [Name]
 freeVars (Lit l) = []
 freeVars (Var x) = [x]
 freeVars (App e1 e2)  = (freeVars e1) `union` (freeVars e2)
-freeVars (Lam  Nothing e e') = (freeVars e) `union` (freeVars e')
-freeVars (Lam (Just n) e e') = (freeVars e) `union` (freeVars e' \\ [n])
-freeVars (Pi   Nothing e e') = (freeVars e) `union` (freeVars e')
-freeVars (Pi  (Just n) e e') = (freeVars e) `union` (freeVars e' \\ [n])
+freeVars (Abs _  Nothing e e') = (freeVars e) `union` (freeVars e')
+freeVars (Abs _ (Just n) e e') = (freeVars e) `union` (freeVars e' \\ [n])
+
+sub :: [Name] -> Expr -> Name -> Expr -> Expr
+sub fVars s v (Lit l) = Lit l
+sub fVars s v (Var x) = if x == v then s else Var x
+sub fVars s v (App e1 e2) = App (sub fVars s v e1) (sub fVars s v e2)
+sub fVars s v (Abs a Nothing e e') = Abs a Nothing (sub fVars s v e) (sub fVars s v e')
+sub fVars s v (Abs a (Just n) e e')
+  |          (n == v) = Abs a (Just n) e e'
+  | (notElem n fVars) = Abs a (Just n) (sub fVars s v e) (sub fVars s v e') --can't understand this "rapier" method
+  --the case where variables would be captured simply fails the pattern matching here
+
+substitute :: Expr -> Name -> Expr -> Expr
+substitute s = sub (freeVars s) s
+
+beta :: Expr -> Expr
+--reduction
+beta (App (Abs _ (Just n) _ e2) e) = substitute e n e2
+beta (App (Abs _  Nothing _ e2) _) = e2
+--propagation
+beta (App e1 e2) = App (beta e1) (beta e2)
+beta (Abs a s e1 e2) = Abs a s (beta e1) (beta e2)
+--neither reduction nor propagation
+beta e = e
+
+normalize :: Expr -> Expr
+normalize e = if e == e' then e' else normalize e'
+  where e' = beta e
+
+(===) :: Expr -> Expr -> Bool --beta equivalence
+e1 === e2 = (normalize e1) == (normalize e2)
+-----------------------------------------------------------------------------------------------
+typeLit :: Lit -> Either TypeError Expr
+typeLit l =
+  case l of
+    (Sort Box)   -> Left BoxError
+    (Sort Star)  -> Right $ Lit (Sort Box)
+    (Type _)     -> Right $ Lit (Sort Star)
+    (Term (N _)) -> Right $ Lit (Type Nat)
+    (Term (B _)) -> Right $ Lit (Type Bool)
+
+tC :: Context -> Expr -> Either TypeError Expr
+tC _ (Lit l) = typeLit l
+tC c (Var x) = if isJust l then Right (fromJust l) else Left LookupError
+  where l = lookup x c
+tC c (App (Abs _  Nothing e e') e2) = if e === e2 then tC        c  e' else Left MismatchAppError
+tC c (App (Abs _ (Just n) e e') e2) = if e === e2 then tC ((n,e):c) e' else Left MismatchAppError
+tC _ (App e1 e2) = Left NonAbsAppError
+tC c (Abs Lam Nothing e e') =
+  case (tC c e') of
+    (Left e) -> Left e
+    (Right t) -> Right $ Abs Pi Nothing e t
+tC c (Abs Lam (Just n) e e') =
+  case (tC ((n,e):c) e') of
+    (Left e) -> Left e
+    (Right t) -> Right $ Abs Pi (Just n) e t
+tC c (Abs Pi  Nothing e e') = tC        c  e'
+tC c (Abs Pi (Just n) e e') = tC ((n,e):c) e'
+
+typeCheck :: Expr -> Either TypeError Expr
+typeCheck = tC []
+-----------------------------------------------------------------------------------------------
 
 {-
 The implication above is that given (\x:e.e') the "lambda x" DOES bind the free x's in e' but DOES NOT
@@ -42,16 +106,10 @@ The domain of a function is the set of possible different inputs. The range is t
 In this case it is clear that the output of the function is the Expression produced from the substitution.
 However, since there are 2 seperate expressions in the input, it is not clear which should be considered when
 talking about the domain of the function.
+
+vars :: [Name]
+vars = (\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem 26) <$> [0..]
+
+fresh :: [Name] -> Name --given a set of used variable names, return a fresh variable from an infinite list
+fresh s = head $ filter (flip notElem s) vars
 -}
-
-sub :: [Name] -> Name -> Expr -> Expr -> Expr
-sub fVars v s (Lit l) = Lit l
-sub fVars v s (Var x) = Var $ if x == v then v else x
-sub fVars v s (App e1 e2) = App (sub fVars v s e1) (sub fVars v s e2)
-sub fVars v s (Lam  Nothing e e') = Lam Nothing (sub fVars v s e) (sub fVars v s e')
-sub fVars v s (Lam (Just n) e e')
-  | (n == v) = Lam (Just n) e e'
-  | (notElem n fVars) = Lam (Just n) (sub fVars v s e) (sub fVars v s e') --can't understand this "rapier" paper
-
-substitute :: Name -> Expr -> Expr -> Expr
-substitute v s e = sub (freeVars s) v s e
