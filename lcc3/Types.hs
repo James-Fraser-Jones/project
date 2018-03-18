@@ -99,6 +99,13 @@ tC c (Abs Lam x a b) = do
   t  <- isSort (tC c (Abs Pi x a b'))
   return (Abs Pi x a b')
 
+--getting application to work is a nightmare, I feel like the best way might be to just recurse through the entire structure once
+--and then beta reduce once that's all done but I can't seem to figure out how that should be done
+--actually I think all I really need to do is when it recurses through the structure initially it should only perform
+--the tC recursion on the left hand expression: tc (app (app e1 e2) e3) = app (tc (app e1 e2)) e3 = app (app (tc e1) e2) e3
+--this would certainly work if (during normalization of the resulting expression) there was type checking for the
+--case of mismatchapperror and NonAbsAppError
+
 tC c (App f a) = do
   f' <- (tC c f)
   a' <- (tC c a)
