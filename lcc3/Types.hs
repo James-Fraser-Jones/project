@@ -8,13 +8,12 @@ import Data.Functor
 fromRight e = head $ rights [e]
 fromLeft e = head $ lefts [e]
 
-type Name = String
-type Context = [(Name, Expr)]
+type Var = String
+type Bin = Maybe Var
+type Context = [(Var, Expr)]
 
---no distinction is made between abstractions in the expr datatype
-data Expr = Lit Lit | Var Name | App Expr Expr | Abs Abs (Maybe Name) Expr Expr deriving Eq
+data Expr = Lit Lit | Var Var | App Expr Expr | Abs Abs Bin Expr Expr deriving Eq
 
---the distinction is instead made in the abs datatype
 data  Abs = Lam | Pi deriving Eq
 data  Lit = Sort Sort | Type Type | Term Term deriving Eq
 
@@ -26,15 +25,16 @@ data TypeError = BoxError
                | LookupError
                | MismatchAppError
                | NonAbsAppError
+               | NonWellFormedError
 -----------------------------------------------------------------------------------------------
-freeVars :: Expr -> [Name]
+freeVars :: Expr -> [Var]
 freeVars (Lit l) = []
 freeVars (Var x) = [x]
 freeVars (App e1 e2)  = (freeVars e1) `union` (freeVars e2)
 freeVars (Abs _  Nothing e e') = (freeVars e) `union` (freeVars e')
 freeVars (Abs _ (Just n) e e') = (freeVars e) `union` (freeVars e' \\ [n])
 
-sub :: [Name] -> Expr -> Name -> Expr -> Expr
+sub :: [Var] -> Expr -> Var -> Expr -> Expr
 sub fVars s v (Lit l) = Lit l
 sub fVars s v (Var x) = if x == v then s else Var x
 sub fVars s v (App e1 e2) = App (sub fVars s v e1) (sub fVars s v e2)
@@ -44,15 +44,15 @@ sub fVars s v (Abs a (Just n) e e')
   | (notElem n fVars) = Abs a (Just n) (sub fVars s v e) (sub fVars s v e') --can't understand this "rapier" method
   --the case where variables would be captured simply fails the pattern matching here
 
-substitute :: Expr -> Name -> Expr -> Expr
-substitute s = sub (freeVars s) s
+substitute :: Expr -> Bin -> Expr -> Expr
+substitute _  Nothing e = e
+substitute s (Just b) e = sub (freeVars s) s b e
 
 beta :: Expr -> Expr
 --reduction
-beta (App (Abs _ (Just n) _ e2) e) = substitute e n e2
-beta (App (Abs _  Nothing _ e2) _) = e2
+beta (App (Abs _ n _ e2) e) = substitute e n e2
 --propagation
-beta (App e1 e2) = App (beta e1) (beta e2)
+beta (App     e1 e2) = App     (beta e1) (beta e2)
 beta (Abs a s e1 e2) = Abs a s (beta e1) (beta e2)
 --neither reduction nor propagation
 beta e = e
@@ -64,7 +64,11 @@ normalize e = if e == e' then e' else normalize e'
 (===) :: Expr -> Expr -> Bool --beta equivalence
 e1 === e2 = (normalize e1) == (normalize e2)
 -----------------------------------------------------------------------------------------------
-extend :: Maybe Name -> Expr -> Context -> Context
+isSort :: Either TypeError Expr -> Either TypeError Expr
+isSort (Right (Lit (Sort s))) = Right (Lit (Sort s))
+isSort _ = Left NonWellFormedError
+
+extend :: Bin -> Expr -> Context -> Context
 extend Nothing _ c = c
 extend (Just n) e c = (n,e):c
 
@@ -78,27 +82,31 @@ typeLit l =
     (Term (B _)) -> Right $ Lit (Type Bool)
 
 typeCheck :: Expr -> Either TypeError Expr
-typeCheck e = do
-  t <- tC [] e --recurse through structre replacing variables and abstractions with their types (should I be replacing variables?)
-  return $ normalize t --this does not check for MismatchAppError or NonAbsAppError yet
+typeCheck = tC []
 
 tC :: Context -> Expr -> Either TypeError Expr
-tC _ (Lit l) = Right $ Lit l --it seems that I should not actually replace literals with their types for beta to work out correctly
+tC _ (Lit l) = typeLit l
 tC c (Var x) = if isJust l then Right (fromJust l) else Left LookupError
   where l = lookup x c
-tC c (Abs Lam n e e') = (tC (extend n e c) e') >>= (\t -> Right $ Abs Pi n e t)
-tC c (Abs Pi  n e e') =  tC (extend n e c) e'
-tC c (App e1 e2) = do --propagation
-  t1 <- (tC c e1)
-  t2 <- (tC c e2)
-  return $ App t1 t2
 
-{-
-tC c (App (Abs _ n e e') e2) =
-  case (tC c e2) of
-    (Left e) -> Left e
-    (Right t) -> if e === t then tC (extend n e c) e' else Left MismatchAppError
--}
+tC c (Abs Pi x a b) = do
+  s <- isSort (tC c a) --this should not be ignored if it errors, even though it is not present in the return statement
+  t <- isSort (tC (extend x a c) b)
+  return t
+
+tC c (Abs Lam x a b) = do
+  b' <- (tC (extend x a c) b)
+  t  <- isSort (tC c (Abs Pi x a b'))
+  return (Abs Pi x a b')
+
+tC c (App f a) = do
+  f' <- (tC c f)
+  a' <- (tC c a)
+  appComp f' a'
+
+appComp :: Expr -> Expr -> Either TypeError Expr
+appComp (Abs Pi x a' b') a = if a == a' then Right $ substitute a x b' else Left $ MismatchAppError
+appComp _ _ = Left NonAbsAppError
 -----------------------------------------------------------------------------------------------
 
 {-

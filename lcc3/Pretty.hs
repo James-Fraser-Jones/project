@@ -49,3 +49,4 @@ instance Show TypeError where
   show LookupError = "Error: Attempted to get type of a free variable"
   show MismatchAppError = "Error: Function is applied to an expression of an incorrect type"
   show NonAbsAppError = "Error: Non-Function is applied to an expression"
+  show NonWellFormedError = "Error: Type was not well formed"

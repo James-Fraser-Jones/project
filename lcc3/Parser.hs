@@ -156,14 +156,14 @@ lit = Sort <$> sort
   <|> Type <$> type'
   <|> Term <$> term
 
-name :: Parser Name
-name = (:) <$> lower <*> (many (lower <|> digit))
+var :: Parser Var
+var = (:) <$> lower <*> (many (lower <|> digit))
 
 exprNoL :: Parser Expr
 exprNoL = parens expr
-      <|> Abs <$> abs <*> (Just <$> name) <*> (char ':' *> expr) <*> (arr *> expr)
+      <|> Abs <$> abs <*> (Just <$> var) <*> (char ':' *> expr) <*> (arr *> expr)
       <|> Abs <$> abs <*> (pure Nothing) <*>              expr  <*> (arr *> expr)
-      <|> Var <$> name
+      <|> Var <$> var
       <|> Lit <$> lit
 
 expr :: Parser Expr
