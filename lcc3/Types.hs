@@ -1,7 +1,7 @@
 module Types where
 
 import Data.Maybe
-import Data.Either hiding (show)
+import Data.Either
 import Data.List
 import Data.Functor
 
@@ -105,6 +105,7 @@ tC c (App e1 e2) = do
   t <- (tC c e2)
   appComp f e2 t
 
+--this function needs to check for alpha equivalence of the types, NOT syntactic equivalence
 appComp :: Expr -> Expr -> Expr -> Either TypeError Expr
 appComp (Abs Pi x t1 b) e t2 = if t1 == t2 then Right $ substitute e x b else Left MismatchAppError
 appComp _ _ _ = Left NonAbsAppError
@@ -117,6 +118,14 @@ getType = fromRight.typeCheck
 --------------------------------------------------------------------------------------------------------
 
 {-
+Currently
+run "(\\x:Nat -> \\y:(^g:*->*) -> y) @ 4 @ (\\x:*->x)"
+will typeerror but
+"(\\x:Nat -> \\y:(^x:*->*) -> y) @ 4 @ (\\x:*->x)"
+won't even though (^g:*->*) is alpha equivalent to (^x:*->*)
+I also need to check that when this gets fixed, it also allows the other kind of syntax:
+I.e. (^x:*->*) is also "alpha equivalent" to (^*->*)
+
 The implication above is that given (\x:e.e') the "lambda x" DOES bind the free x's in e' but DOES NOT
 bind the free x's in e. However, given a nested expression: (\x:e.(\y:e'.e'')) the free x's in e' ARE
 bound. This is what we want as it allows us, for example, to make the polymorphic identity function on terms:
