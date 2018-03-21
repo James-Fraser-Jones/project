@@ -4,15 +4,10 @@ import Types
 
 --{-
 instance Show Expr where
-  --app rules
-  show (App (App e1 e2) x) = (show (App e1 e2)) ++ " " ++ (maybrace x) --application is left associative
-  show (App x y) = (maybrace x) ++ " " ++ (maybrace y)
-  --abs rules
-  show (Abs a (Just n) e1 e2) = (show a) ++ n ++ ":" ++ (maybrace e1) ++ " → " ++ (show e2)
-  show (Abs a Nothing  e1 e2) = (show a) ++             (maybrace e1) ++ " → " ++ (show e2)
-  --variables
-  show (Var n) = n
-  --literals
+  show (App (App e1 e2) e) = (show (App e1 e2)) ++ " " ++ (maybrace e) --application is left associative
+  show (App e1 e2) = (maybrace e1) ++ " " ++ (maybrace e2)
+  show (Abs a v e1 e2) = (show a) ++ v ++ ":" ++ (maybrace e1) ++ " → " ++ (show e2) --abstraction is right associative
+  show (Var v) = v
   show (Lit l) = show l
 
 instance Show Abs where
@@ -46,11 +41,11 @@ pError (Right b) = show b
 --------------------------------------------------------------------------------------------------------
 braced :: Expr -> Bool
 braced (Lit l) = False
-braced (Var s) = False
+braced (Var v) = False
 braced _ = True
 
 brace :: String -> String
 brace s = "(" ++ s ++ ")"
 
 maybrace :: Expr -> String
-maybrace x = if braced x then brace (show x) else show x
+maybrace e = (if braced e then brace else id) $ show e

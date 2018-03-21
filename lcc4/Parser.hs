@@ -161,8 +161,7 @@ var = (:) <$> lower <*> (many (lower <|> digit))
 
 exprNoL :: Parser Expr
 exprNoL = parens expr
-      <|> Abs <$> abs <*> (Just <$> var) <*> (char ':' *> expr) <*> (arr *> expr)
-      <|> Abs <$> abs <*> (pure Nothing) <*>              expr  <*> (arr *> expr)
+      <|> Abs <$> abs <*> var <*> (char ':' *> expr) <*> (arr *> expr)
       <|> Var <$> var
       <|> Lit <$> lit
 
