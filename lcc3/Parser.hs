@@ -12,7 +12,7 @@ import Control.Monad
 --heavily inspired by http://dev.stephendiehl.com/fun/002_parsers.html
 --and uob language engineering material
 
---------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
 --Basic parsers and parser combinators
 newtype Parser a = Parser { parse :: String -> [(a, String)] }
 
@@ -63,7 +63,7 @@ satisfy p = item >>= \c ->
     then pure c
     else empty
 
---------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
 --Higher order parsers
 
 char :: Char -> Parser Char
@@ -94,7 +94,7 @@ token px = (many $ satisfy isSpace) *> px
 parens :: Parser a -> Parser a
 parens px = (char '(') *> px <* (char ')')
 
---------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
 --Primitives
 
 box :: Parser String
@@ -132,7 +132,7 @@ arr = string "→"
 app :: Parser String
 app = string "@"
 
---------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
 --Expressions
 
 abs :: Parser Abs

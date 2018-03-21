@@ -5,8 +5,13 @@ import Data.Either hiding (show)
 import Data.List
 import Data.Functor
 
-fromRight e = head $ rights [e]
-fromLeft e = head $ lefts [e]
+fromRight :: Either a b -> b
+fromRight (Right b) = b
+fromRight (Left a) = error "Attempted to get Right value from a Left Either"
+
+fromLeft :: Either a b -> a
+fromLeft (Left a) = a
+fromLeft (Right b) = error "Attempted to get Left value from a Right Either"
 
 type Var = String
 type Bin = Maybe Var
@@ -21,12 +26,12 @@ data Sort = Box | Star deriving Eq
 data Type = Bool | Nat deriving (Eq, Show)
 data Term = B Bool | N Int deriving Eq
 
-data TypeError = BoxError
-               | LookupError
-               | MismatchAppError
-               | NonAbsAppError
-               | NonWellFormedError
------------------------------------------------------------------------------------------------
+data TypeError = BoxError --attempting to get type of Box
+               | LookupError --attempting to get type of a free variable
+               | MismatchAppError --attempting to apply an abstraction to an expression with the wrong type
+               | NonAbsAppError --attempting to apply a non-abstraction to an exprression
+               | NonSortError --expression is not a sort
+--------------------------------------------------------------------------------------------------------
 freeVars :: Expr -> [Var]
 freeVars (Lit l) = []
 freeVars (Var x) = [x]
@@ -48,6 +53,7 @@ substitute :: Expr -> Bin -> Expr -> Expr
 substitute _  Nothing e = e
 substitute s (Just b) e = sub (freeVars s) s b e
 
+--beta and nomalize functions just kind of brute-force the normal form of an expression
 beta :: Expr -> Expr
 --reduction
 beta (App (Abs _ n _ e2) e) = substitute e n e2
@@ -60,13 +66,10 @@ beta e = e
 normalize :: Expr -> Expr
 normalize e = if e == e' then e' else normalize e'
   where e' = beta e
-
-(===) :: Expr -> Expr -> Bool --beta equivalence
-e1 === e2 = (normalize e1) == (normalize e2)
------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
 isSort :: Either TypeError Expr -> Either TypeError Expr
 isSort (Right (Lit (Sort s))) = Right (Lit (Sort s))
-isSort _ = Left NonWellFormedError
+isSort _ = Left NonSortError
 
 extend :: Bin -> Expr -> Context -> Context
 extend Nothing _ c = c
@@ -81,40 +84,37 @@ typeLit l =
     (Term (N _)) -> Right $ Lit (Type Nat)
     (Term (B _)) -> Right $ Lit (Type Bool)
 
-typeCheck :: Expr -> Either TypeError Expr
-typeCheck = tC []
-
 tC :: Context -> Expr -> Either TypeError Expr
 tC _ (Lit l) = typeLit l
+
 tC c (Var x) = if isJust l then Right (fromJust l) else Left LookupError
   where l = lookup x c
 
-tC c (Abs Pi x a b) = do
-  s <- isSort (tC c a) --this should not be ignored if it errors, even though it is not present in the return statement
-  t <- isSort (tC (extend x a c) b)
-  return t
-
 tC c (Abs Lam x a b) = do
   b' <- (tC (extend x a c) b)
-  t  <- isSort (tC c (Abs Pi x a b'))
-  return (Abs Pi x a b')
+  let p = (Abs Pi x a b')
+  isSort (tC c p) --check that p is "well typed"
+  return p
 
---getting application to work is a nightmare, I feel like the best way might be to just recurse through the entire structure once
---and then beta reduce once that's all done but I can't seem to figure out how that should be done
---actually I think all I really need to do is when it recurses through the structure initially it should only perform
---the tC recursion on the left hand expression: tc (app (app e1 e2) e3) = app (tc (app e1 e2)) e3 = app (app (tc e1) e2) e3
---this would certainly work if (during normalization of the resulting expression) there was type checking for the
---case of mismatchapperror and NonAbsAppError
+tC c (Abs Pi x a b) = do
+  isSort (tC c a) --check that a is "well typed"
+  isSort (tC (extend x a c) b) --this gets returned
 
-tC c (App f a) = do
-  f' <- (tC c f)
-  a' <- (tC c a)
-  appComp f' a'
+tC c (App e1 e2) = do
+  f <- (tC c e1) --e1 should be a lambda abstraction, so f should be a pi abstraction
+  t <- (tC c e2)
+  appComp f e2 t
 
-appComp :: Expr -> Expr -> Either TypeError Expr
-appComp (Abs Pi x a' b') a = if a == a' then Right $ substitute a x b' else Left $ MismatchAppError
-appComp _ _ = Left NonAbsAppError
------------------------------------------------------------------------------------------------
+appComp :: Expr -> Expr -> Expr -> Either TypeError Expr
+appComp (Abs Pi x t1 b) e t2 = if t1 == t2 then Right $ substitute e x b else Left MismatchAppError
+appComp _ _ _ = Left NonAbsAppError
+
+typeCheck :: Expr -> Either TypeError Expr
+typeCheck = tC []
+
+getType :: Expr -> Expr
+getType = fromRight.typeCheck
+--------------------------------------------------------------------------------------------------------
 
 {-
 The implication above is that given (\x:e.e') the "lambda x" DOES bind the free x's in e' but DOES NOT
@@ -137,4 +137,21 @@ vars = (\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip qu
 
 fresh :: [Name] -> Name --given a set of used variable names, return a fresh variable from an infinite list
 fresh s = head $ filter (flip notElem s) vars
+-}
+
+{-
+I actually feel like the best generalization for abstractions would be the following: Abs Abs [(Bin, Expr)] Expr
+This would also mean that Abstractions could not be directly nested inside themselves because multipul nested abstractions
+Are simply represented by having a long list of [(Bin, Expr)] in a single abstraction.
+When the list becomes empty, it may be discarded and hence we are left with the output expression with all binders binding
+the variables that were fed in to empty the list
+-}
+
+{-
+getting application to work is a nightmare, I feel like the best way might be to just recurse through the entire structure once
+and then beta reduce once that's all done but I can't seem to figure out how that should be done
+actually I think all I really need to do is when it recurses through the structure initially it should only perform
+the tC recursion on the left hand expression: tc (app (app e1 e2) e3) = app (tc (app e1 e2)) e3 = app (app (tc e1) e2) e3
+this would certainly work if (during normalization of the resulting expression) there was type checking for the
+case of mismatchapperror and NonAbsAppError
 -}

@@ -2,11 +2,29 @@ import Types
 import Parser
 import Pretty
 
-polyIdType = "^a:*->^a->a" --type of polymorphic identity function for terms of type a
+isRight :: Either a b -> Bool
+isRight (Right _) = True
+isRight _ = False
+
+run :: String -> IO()
+run s = do
+  putStrLn ("\nString -- " ++ s)
+  let e = getExpr s
+  let te = typeCheck e
+  if isRight te then do
+    putStrLn ("  Expr -- " ++ show e ++ " : " ++ pError te)
+    let e' = normalize e
+    putStrLn ("Normal -- " ++ show e' ++ "\n")
+    return ()
+    else do
+      putStrLn ("  Expr -- " ++ show e)
+      putStrLn (pError te ++ "\n")
+      return()
+--------------------------------------------------------------------------------------------------------
 fmapType = "^f:(^*->*)->^a:*->^b:*->(^(^a->b)->(^(f @ a)->(f @ b)))" --fmap :: (a -> b) -> f a -> f b
 fmapTypeB = "^f:^*->*->^a:*->^b:*->^^a->b->^(f @ a)->(f @ b)"
-listType = "^*->*"
 
+polyIdType = "^a:*->^a->a" --type of polymorphic identity function for terms of type a
 polyId = "(\\a:*->\\x:a->x)" --polymorphic identity function for terms of type a
 natId = polyId ++ " @ Nat @ 6"
 boolId = polyId ++ " @ Bool @ True"
@@ -15,20 +33,8 @@ test1 = "(λx:Nat → x)"
 test3 = "(λx:Nat → [])"
 test2 = "(\\a:*->\\x:a->x) @ Nat @ 6"
 test4 = "(Πa:★ → Πx:a → a) @ ★ @ Nat"
-
+--------------------------------------------------------------------------------------------------------
 {-
-run' :: Expr -> IO()
-run' e = do
-  print e
-  let b = beta e
-  if b == e then return () else run' b
-
-run :: String -> IO()
-run s = do
-  print s
-  let e = getExpr s
-  run' e
-
 Basically we have to think carefully:
 
 (Πa:★ → Πx:a → a) ★ Nat
