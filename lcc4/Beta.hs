@@ -4,6 +4,14 @@ import Types
 import Data.List
 import Data.Maybe
 --------------------------------------------------------------------------------------------------------
+--Instances of specific calculi
+
+stlc, sf, sfomega, coc :: Calculus
+stlc = [(Star, Star)]
+sf = stlc ++ [(Box, Star)]
+sfomega = sf ++ [(Box, Box)]
+coc = sfomega ++ [(Star, Box)]
+--------------------------------------------------------------------------------------------------------
 --Beta reduction
 
 freeVars :: Expr -> [Var]
@@ -116,4 +124,22 @@ I also want to figure out how I can support both nested abstractions and nested 
 
 I also need to figure out how to implement addition and boolean conjunction as example functions to work
 with my pre-defined literal values
+
+---------------------------------------
+
+PRIORITY:
+
+Get command line interface working propperly (maybe I can use Haskeline??)
+all I really need is for arrow keys to exhibit their usual behavior with regards to the
+command line
+
+Modify the typing rule for creating pi types from lambdas so that it can take a "Calculus"
+as a parameter in order to restrict the capabilities of the language. Also change error messages
+to reflect when someone has attempted to use a more powerful calculus than is allowed.
+
+Implement alpha equivalence and capture avoiding substitution in as painless a way as possible
+and ensure that the typing rule for application correctly uses alpha equivalence in its checks.
+
+Later: you can consider the language extentions you were talking about which would allow
+for more easy nesting of abstractions and applications and empty variables etc..
 -}

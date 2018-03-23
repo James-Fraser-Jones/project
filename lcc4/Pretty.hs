@@ -1,6 +1,8 @@
 module Pretty(Show, pEither) where
 import Types
 --------------------------------------------------------------------------------------------------------
+--Utility functions
+
 braced (Lit _) = False
 braced (Var _) = False
 braced _ = True

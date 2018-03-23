@@ -1,5 +1,7 @@
 module Types where
 --------------------------------------------------------------------------------------------------------
+--Either Functions
+
 isRight (Right _) = True
 isRight _ = False
 isLeft = not.isRight
@@ -12,6 +14,7 @@ fromLeft (Right b) = error "Attempted to get Left value from a Right Either"
 
 type Var = String
 type Context = [(Var, Expr)]
+type Calculus = [(Sort, Sort)]
 
 data Expr = Lit Lit | Var Var | App Expr Expr | Abs Abs Var Expr Expr deriving Eq
 

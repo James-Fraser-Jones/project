@@ -40,4 +40,6 @@ boolId = polyId ++ " @ Bool"
 
 typeTypeApp = "(\\x:^a:*->*->\\y:*->x @ y)"
 constBool = "(\\a:*->Bool)" --this has to be a to match with the a above currently because I don't have alpha equivalence check yet
+
 ex1 = typeTypeApp ++ " @ " ++ constBool
+ex2 = polyId ++ " @ (^g:Nat->Nat)" ++ " @ (\\g:Nat->g)" ++ " @ 3"
