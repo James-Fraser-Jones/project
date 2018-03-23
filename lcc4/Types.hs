@@ -28,7 +28,7 @@ data Term = B Bool | N Int deriving Eq --the example literal terms of this langu
 data TypeError = BoxError --attempting to get type of Box
                | LookupError --attempting to get type of a free variable
                | MismatchAppError --attempting to apply an abstraction to an expression with the wrong type
-               | NonAbsAppError --attempting to apply a non-abstraction to an exprression
+               | NonLamAppError --attempting to apply a non-lambda abstraction to an exprression
                | NonSortError --expression is not a sort when it should be
 --------------------------------------------------------------------------------------------------------
 freeVars :: Expr -> [Var]
@@ -102,7 +102,7 @@ I'm also not sure whether or not beta equivalence should count here
 -}
 appComp :: Expr -> Expr -> Expr -> Either TypeError Expr
 appComp (Abs Pi x t1 b) e t2 = if t1 == t2 then Right $ substitute e x b else Left MismatchAppError
-appComp _ _ _ = Left NonAbsAppError
+appComp _ _ _ = Left NonLamAppError
 
 typeCheck :: Expr -> Either TypeError Expr
 typeCheck = tC []

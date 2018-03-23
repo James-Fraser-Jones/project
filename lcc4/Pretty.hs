@@ -29,11 +29,11 @@ instance Show Term where
 --}
 
 instance Show TypeError where
-  show BoxError = "Type Error: ☐ has no type"
-  show LookupError = "Type Error: Free variable has no type"
-  show MismatchAppError = "Type Error: Function is applied to an expression of an incorrect type"
-  show NonAbsAppError = "Type Error: Non-Function is applied to an expression"
-  show NonSortError = "Type Error: Expression is not a sort"
+  show BoxError = "Type Error: Attempted to get the type of Box"
+  show LookupError = "Type Error: Attempted to get the type of a free variable"
+  show MismatchAppError = "Type Error: Lambda abstraction type does not match the expression it's applied to"
+  show NonLamAppError = "Type Error: Non lambda abstraction is applied to an expression"
+  show NonSortError = "Type Error: Type of an expression is not a sort where expected"
 
 pError :: Either TypeError Expr -> String
 pError (Left a) = show a
