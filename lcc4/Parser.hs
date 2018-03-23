@@ -1,30 +1,26 @@
-module Parser where
+module Parser(getExpr) where
 
 import Types
 
 import Prelude hiding (pi, abs)
-import Data.Char
-import Data.Foldable (foldl')
-import Data.Functor
 import Control.Applicative hiding (some, many)
-import Control.Monad
-
---heavily inspired by http://dev.stephendiehl.com/fun/002_parsers.html
---and uob language engineering material
-
+import Data.Foldable(foldl')
+import Data.Char
 --------------------------------------------------------------------------------------------------------
 --Basic parsers and parser combinators
+--(heavily inspired by http://dev.stephendiehl.com/fun/002_parsers.html and uob language engineering material)
+
 newtype Parser a = Parser { parse :: String -> [(a, String)] }
 
-runParser :: Parser a -> String -> a
+runParser :: Parser a -> String -> Either ParseError a
 runParser m s =
   case parse m s of
-    [(res, [])] -> res
-    [(_, rs)]   -> error "Parser did not consume entire stream."
-    _           -> error "Parser error."
+    [(res, [])] -> Right res
+    [(_, rs)]   -> Left RemainError
+    _           -> Left GeneralError
 
 instance Functor Parser where
- fmap f (Parser cs) = Parser (\s -> [(f a, b) | (a, b) <- cs s]) --I've kinda forgotten how list comprehensions work
+ fmap f (Parser cs) = Parser (\s -> [(f a, b) | (a, b) <- cs s])
 
 instance Applicative Parser where
  pure a = Parser (\s -> [(a,s)]) --produce
@@ -62,7 +58,6 @@ satisfy p = item >>= \c ->
   if p c
     then pure c
     else empty
-
 --------------------------------------------------------------------------------------------------------
 --Higher order parsers
 
@@ -81,19 +76,20 @@ oneOf s = satisfy (flip elem s)
 chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a --this was taken from Jamie
 chainl1 p op = foldl' (flip ($)) <$> p <*> many (flip <$> op <*> p)
 
+{-
 chainr1 :: Parser a -> Parser (a -> a -> a) -> Parser a
 chainr1 p op = scan
   where
     scan = do{ x <- p; rest x }
     rest x = do{ f <- op; y <- scan; return (f x y)}
       <|> return x
+-}
 
 token :: Parser a -> Parser a
 token px = (many $ satisfy isSpace) *> px
 
 parens :: Parser a -> Parser a
 parens px = (char '(') *> px <* (char ')')
-
 --------------------------------------------------------------------------------------------------------
 --Primitives
 
@@ -131,7 +127,6 @@ arr = string "→"
 
 app :: Parser String
 app = string "@"
-
 --------------------------------------------------------------------------------------------------------
 --Expressions
 
@@ -167,7 +162,9 @@ exprNoL = parens expr
 
 expr :: Parser Expr
 expr = chainl1 exprNoL (app *> pure App)
+--------------------------------------------------------------------------------------------------------
+--Top Level Function
 
-getExpr :: String -> Expr
+getExpr :: String -> Either ParseError Expr
 getExpr s = runParser expr (removeW s)
   where removeW = foldr (\c cs -> if isSpace c then cs else c:cs) []

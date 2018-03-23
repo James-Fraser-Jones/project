@@ -1,8 +1,14 @@
-module Pretty(Show, pError) where
-
+module Pretty(Show, pEither) where
 import Types
+--------------------------------------------------------------------------------------------------------
+braced (Lit _) = False
+braced (Var _) = False
+braced _ = True
+maybrace e = (if braced e then brace else id) $ show e
+  where brace s = "(" ++ s ++ ")"
+--------------------------------------------------------------------------------------------------------
+--Show instances
 
---{-
 instance Show Expr where
   show (App (App e1 e2) e) = (show (App e1 e2)) ++ " " ++ (maybrace e) --application is left associative
   show (App e1 e2) = (maybrace e1) ++ " " ++ (maybrace e2)
@@ -26,7 +32,6 @@ instance Show Sort where
 instance Show Term where
   show (B b) = show b
   show (N n) = show n
---}
 
 instance Show TypeError where
   show BoxError = "Type Error: Attempted to get the type of Box"
@@ -35,17 +40,12 @@ instance Show TypeError where
   show NonLamAppError = "Type Error: Non lambda abstraction is applied to an expression"
   show NonSortError = "Type Error: Type of an expression is not a sort where expected"
 
-pError :: Either TypeError Expr -> String
-pError (Left a) = show a
-pError (Right b) = show b
+instance Show ParseError where
+  show RemainError = "Parser did not consume entire stream."
+  show GeneralError = "Parser error."
 --------------------------------------------------------------------------------------------------------
-braced :: Expr -> Bool
-braced (Lit l) = False
-braced (Var v) = False
-braced _ = True
+--Pretty Either printing
 
-brace :: String -> String
-brace s = "(" ++ s ++ ")"
-
-maybrace :: Expr -> String
-maybrace e = (if braced e then brace else id) $ show e
+pEither :: (Show a, Show b) => Either a b -> String
+pEither (Left a) = show a
+pEither (Right b) = show b
