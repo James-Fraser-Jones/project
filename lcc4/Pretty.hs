@@ -38,13 +38,13 @@ instance Show Term where
 instance Show TypeError where
   show BoxError = "Type Error: Attempted to get the type of Box"
   show LookupError = "Type Error: Attempted to get the type of a free variable"
-  show MismatchAppError = "Type Error: Lambda abstraction type does not match the expression it's applied to"
-  show NonLamAppError = "Type Error: Non lambda abstraction is applied to an expression"
-  show NonSortError = "Type Error: Type of an expression is not a sort where expected"
+  show MismatchAppError = "Type Error: Lambda function type does not match the expression it's applied to"
+  show NonLamAppError = "Type Error: Non lambda function is applied to an expression"
+  show NonSortError = "Type Error: Expression is not well typed"
 
 instance Show ParseError where
-  show RemainError = "Parser did not consume entire stream."
-  show GeneralError = "Parser error."
+  show RemainError = "Parser did not consume entire stream"
+  show GeneralError = "Parser error"
 --------------------------------------------------------------------------------------------------------
 --Pretty Either printing
 

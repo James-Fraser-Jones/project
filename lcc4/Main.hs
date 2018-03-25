@@ -15,7 +15,7 @@ run s = do
     if isRight te then do
       putStrLn ("  Expr -- " ++ show e' ++ " : " ++ pEither te)
       let ne = normalize e'
-      putStrLn ("Normal -- " ++ show ne ++ "\n")
+      putStrLn ("Normal -- " ++ show ne ++ " : " ++ pEither te ++ "\n")
       return ()
       else do
         putStrLn ("  Expr -- " ++ show e')
