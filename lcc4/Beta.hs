@@ -1,16 +1,8 @@
-module Beta(normalize, typeCheck) where
+module Beta (normalize, typeCheck) where
 import Types
 
 import Data.List
 import Data.Maybe
---------------------------------------------------------------------------------------------------------
---Instances of specific calculi
-
-stlc, sf, sfomega, coc :: Calculus
-stlc = [(Star, Star)]
-sf = stlc ++ [(Box, Star)]
-sfomega = sf ++ [(Box, Box)]
-coc = sfomega ++ [(Star, Box)]
 --------------------------------------------------------------------------------------------------------
 --Beta reduction
 
@@ -40,9 +32,14 @@ beta e = e --neither reduction nor propagation
 --------------------------------------------------------------------------------------------------------
 --Typechecking
 
-isSort :: Either TypeError Expr -> Either TypeError Expr
-isSort (Right (Lit (Sort s))) = Right (Lit (Sort s))
+isSort :: Expr -> Either TypeError Expr
+isSort (Lit (Sort s)) = Right $ Lit (Sort s)
 isSort _ = Left NonSortError
+
+wellTyped :: Calculus -> Expr -> Expr -> Either TypeError Expr
+wellTyped ca (Lit (Sort i)) (Lit (Sort o)) =
+  if elem (i, o) ca then Right (Lit (Sort o)) else Left NonSortError
+wellTyped _ _ _ = Left NonSortError
 
 extend :: Var -> Expr -> Context -> Context
 extend v e c = (v,e):c
@@ -56,25 +53,27 @@ typeLit l =
     (Term (N _)) -> Right $ Lit (Type Nat)
     (Term (B _)) -> Right $ Lit (Type Bool)
 
-tC :: Context -> Expr -> Either TypeError Expr
-tC _ (Lit l) = typeLit l
+tC :: Context -> Calculus -> Expr -> Either TypeError Expr
+tC _ _ (Lit l) = typeLit l
 
-tC c (Var x) = if isJust l then Right (fromJust l) else Left LookupError
+tC c ca (Var x) = if isJust l then Right (fromJust l) else Left LookupError
   where l = lookup x c
 
-tC c (Abs Lam x a b) = do
-  b' <- (tC (extend x a c) b)
+tC c ca (Abs Lam x a b) = do
+  b' <- (tC (extend x a c) ca b)
   let p = (Abs Pi x a b')
-  isSort (tC c p) --check that p is "well typed"
+  p' <- (tC c ca p)
+  isSort p'
   return p
 
-tC c (Abs Pi x a b) = do
-  isSort (tC c a) --check that a is "well typed"
-  isSort (tC (extend x a c) b) --this gets returned
+tC c ca (Abs Pi x a b) = do
+  a' <- (tC c ca a)
+  b' <- (tC (extend x a c) ca b)
+  wellTyped ca a' b'
 
-tC c (App e1 e2) = do
-  f <- (tC c e1) --e1 should be a lambda abstraction, so f should be a pi abstraction
-  t <- (tC c e2)
+tC c ca (App e1 e2) = do
+  f <- (tC c ca e1) --e1 should be a lambda abstraction, so f should be a pi abstraction
+  t <- (tC c ca e2)
   appComp f e2 t
 
 {-
@@ -91,7 +90,7 @@ normalize :: Expr -> Expr
 normalize e = if e == e' then e' else normalize e'
   where e' = beta e
 
-typeCheck :: Expr -> Either TypeError Expr
+typeCheck :: Calculus -> Expr -> Either TypeError Expr
 typeCheck = tC [] --begin typechecking with empty context
 --------------------------------------------------------------------------------------------------------
 --Notes
