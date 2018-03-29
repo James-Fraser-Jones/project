@@ -13,6 +13,7 @@ fromLeft (Right b) = error "Attempted to get Left value from a Right Either"
 --Types
 
 type Var = String
+type Cantext = [(Var, Var)]
 type Context = [(Var, Expr)]
 type Calculus = [(Sort, Sort)]
 

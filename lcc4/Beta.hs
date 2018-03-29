@@ -4,6 +4,22 @@ import Types
 import Data.List
 import Data.Maybe
 --------------------------------------------------------------------------------------------------------
+--Alpha equivalence
+
+canonym' :: Cantext -> String -> Expr -> Expr
+canonym' _ _ (Lit l) = Lit l
+canonym' c _ (Var x) = Var $ if isJust l then fromJust l else "F" --all (globally) free variables are alpha equivalent
+  where l = lookup x c
+canonym' c s (App e1 e2) = App (canonym' c ('L':s) e1) (canonym' c ('R':s) e2)
+canonym' c s (Abs a v e e') = Abs a new (canonym' c s e) (canonym' ((v,new):c) new e')
+  where new = ('N':s)
+
+canonym :: Expr -> Expr
+canonym = canonym' [] "P" --only lowercase variable names can be parsed so "P" can't capture
+
+alpha :: Expr -> Expr -> Bool
+alpha e1 e2 = (canonym e1) == (canonym e2)
+--------------------------------------------------------------------------------------------------------
 --Beta reduction
 
 freeVars :: Expr -> [Var]
@@ -76,12 +92,8 @@ tC c ca (App e1 e2) = do
   t <- (tC c ca e2)
   appComp f e2 t
 
-{-
-I think that this function needs to check for alpha equivalence of the types, NOT syntactic equivalence
-I'm also not sure whether or not beta equivalence should count here
--}
 appComp :: Expr -> Expr -> Expr -> Either TypeError Expr
-appComp (Abs Pi x t1 b) e t2 = if t1 == t2 then Right $ substitute e x b else Left MismatchAppError
+appComp (Abs Pi x t1 b) e t2 = if alpha t1 t2 then Right $ substitute e x b else Left MismatchAppError
 appComp _ _ _ = Left NonLamAppError
 --------------------------------------------------------------------------------------------------------
 --Top level functions
@@ -127,17 +139,13 @@ with my pre-defined literal values
 ---------------------------------------
 
 PRIORITY:
+Implement capture avoiding substitution in as painless a way as possible but make sure that you actually need it.
 
 Get command line interface working propperly (maybe I can use Haskeline??)
 all I really need is for arrow keys to exhibit their usual behavior with regards to the
-command line
+command line.
 
-Modify the typing rule for creating pi types from lambdas so that it can take a "Calculus"
-as a parameter in order to restrict the capabilities of the language. Also change error messages
-to reflect when someone has attempted to use a more powerful calculus than is allowed.
-
-Implement alpha equivalence and capture avoiding substitution in as painless a way as possible
-and ensure that the typing rule for application correctly uses alpha equivalence in its checks.
+Change error messages to reflect when someone has attempted to use a more powerful calculus than is allowed?
 
 Later: you can consider the language extentions you were talking about which would allow
 for more easy nesting of abstractions and applications and empty variables etc..

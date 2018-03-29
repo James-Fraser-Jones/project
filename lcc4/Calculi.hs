@@ -22,10 +22,10 @@ t0 = "(\\x:Nat -> x) @ 4" --VV
 t1 = "(\\x:*   ->   x) @ Nat" --TT
 t2 = "(\\x:*   ->   4) @ Nat" --TV
 t3 = "(\\x:Nat -> Nat) @   4" --VT
-t4 = "(\\x:^c:*->*   -> \\y:*   ->   4) @ (\\c:* -> c) @ Nat" --TT and TV
-t5 = "(\\x:^c:*->*   -> \\y:Nat -> Nat) @ (\\c:* -> c) @ 4"   --TT and VT
-t6 = "(\\x:^c:*->Nat -> \\y:Nat -> Nat) @ (\\c:* -> 4) @ 4"   --TV and VT
-t7 = "(\\x:^c:*->* -> \\y:^d:*->Nat -> \\z:Nat -> Nat) @ (\\c:* -> c) @ (\\d:* -> 4) @ 4" --TT and TV and VT
+t4 = "(\\x:^c:*->*   -> \\y:*   ->   4) @ (\\a:* -> a) @ Nat" --TT and TV
+t5 = "(\\x:^c:*->*   -> \\y:Nat -> Nat) @ (\\a:* -> a) @ 4"   --TT and VT
+t6 = "(\\x:^c:*->Nat -> \\y:Nat -> Nat) @ (\\a:* -> 4) @ 4"   --TV and VT
+t7 = "(\\x:^c:*->* -> \\y:^d:*->Nat -> \\z:Nat -> Nat) @ (\\a:* -> a) @ (\\b:* -> 4) @ 4" --TT and TV and VT
 --------------------------------------------------------------------------------------------------------
 --Top level functions
 
