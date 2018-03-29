@@ -33,4 +33,4 @@ data TypeError = BoxError --attempting to get type of Box
                | LookupError --attempting to get type of a free variable
                | MismatchAppError --attempting to apply an abstraction to an expression with the wrong type
                | NonLamAppError --attempting to apply a non-lambda abstraction to an exprression
-               | NonSortError --expression is not a sort when it should be
+               | NonSortError --expression is not a specific sort when it should be

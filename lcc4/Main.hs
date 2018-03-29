@@ -8,23 +8,24 @@ import Calculi
 
 run :: Int -> String -> IO()
 run n s = do
-  putStrLn ("\nString -- " ++ s)
+  putStrLn ("\nCalculus -- " ++ showCalc n)
+  putStrLn ("  String -- " ++ s)
   let e = getExpr s
   if isRight e then do
     let e' = fromRight e
     let ca = calculi !! n
     let te = typeCheck ca e'
     if isRight te then do
-      putStrLn ("  Expr -- " ++ show e' ++ " : " ++ pEither te)
+      putStrLn ("    Expr -- " ++ show e' ++ " : " ++ pEither te)
       let ne = normalize e'
-      putStrLn ("Normal -- " ++ show ne ++ " : " ++ pEither te ++ "\n")
+      putStrLn ("  Normal -- " ++ show ne ++ " : " ++ pEither te ++ "\n")
       return ()
       else do
-        putStrLn ("  Expr -- " ++ show e')
-        putStrLn (pEither te ++ "\n")
+        putStrLn ("    Expr -- " ++ show e')
+        putStrLn ("\n" ++ pEither te ++ "\n")
         return ()
     else do
-      putStrLn (pEither e ++ "\n")
+      putStrLn ("\n" ++ pEither e ++ "\n")
       return ()
 
 test :: Calculus -> Int --Takes a Calculus and returns the number of passed tests
@@ -48,7 +49,7 @@ natId = polyId ++ " @ Nat"
 boolId = polyId ++ " @ Bool"
 
 typeTypeApp = "(\\x:^a:*->*->\\y:*->x @ y)"
-constBool = "(\\a:*->Bool)" --this has to be a to match with the a above currently because I don't have alpha equivalence check yet
+constBool = "(\\g:*->Bool)"
 
 ex1 = typeTypeApp ++ " @ " ++ constBool
 ex2 = polyId ++ " @ (^g:Nat->Nat)" ++ " @ (\\g:Nat->g)" ++ " @ 3"

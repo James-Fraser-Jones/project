@@ -135,18 +135,18 @@ I also want to figure out how I can support both nested abstractions and nested 
 
 I also need to figure out how to implement addition and boolean conjunction as example functions to work
 with my pre-defined literal values
-
----------------------------------------
-
+--------------------------------------------------------------------------------------------------------
 PRIORITY:
+
 Implement capture avoiding substitution in as painless a way as possible but make sure that you actually need it.
 
+Implement functions for literals (plus for naturals and conjunction for booleans, maybe also if??)
+
 Get command line interface working propperly (maybe I can use Haskeline??)
-all I really need is for arrow keys to exhibit their usual behavior with regards to the
-command line.
+all I really need is for arrow keys to exhibit their usual behavior with regards to the command line.
 
-Change error messages to reflect when someone has attempted to use a more powerful calculus than is allowed?
+Maybe change error messages to reflect when someone has attempted to use a more powerful calculus than is allowed?
 
-Later: you can consider the language extentions you were talking about which would allow
-for more easy nesting of abstractions and applications and empty variables etc..
+Consider the language extentions you were talking about which would allow for more easy nesting of abstractions
+and applications and empty variables etc..
 -}

@@ -3,12 +3,6 @@ import Types
 --------------------------------------------------------------------------------------------------------
 --Calculus generation and tests for them
 
-{-
-getCalc 0 --simply typed lambda calculus (λ→), getCalc 1 --second order lambda calculus, system f (λ2)
-getCalc 2 --weak (λω),                         getCalc 3 --system f omega (λω)
-getCalc 4 --logical framework (λP),            getCalc 5 --(λP2)
-getCalc 6 --weak (λPω),                        getCalc 7 --calculus of constructions (λPω or λC)
--}
 getCalc :: Int -> Calculus
 getCalc n = (check n 8 (Star, Box)) ++ (check n 4 (Box, Box)) ++ (check n 2 (Box, Star)) ++ [(Star, Star)]
   where check n k c = if (n `mod` k) >= (k `div` 2) then [c] else []
