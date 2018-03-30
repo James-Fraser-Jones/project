@@ -21,10 +21,11 @@ data Expr = Lit Lit | Var Var | App Expr Expr | Abs Abs Var Expr Expr deriving E
 
 data  Abs = Lam | Pi deriving Eq --used to differentiate functions from function types
 
-data  Lit = Sort Sort | Type Type | Term Term deriving Eq
+data  Lit = Sort Sort | Type Type | Term Term | Func Func deriving Eq
 data Sort = Box | Star deriving Eq --the 2 sorts used in the lambda cube language
 data Type = Bool | Nat deriving (Eq, Show) --the types of the terms below
 data Term = B Bool | N Int deriving Eq --the example literal terms of this language
+data Func = Plus | And | If deriving Eq --example literal functions
 
 data ParseError = RemainError --not all of the input was consumed during parsing
                 | GeneralError --an error occoured during parsing

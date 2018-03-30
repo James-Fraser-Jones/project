@@ -26,6 +26,7 @@ instance Show Lit where
   show (Sort s) = show s
   show (Type ty) = show ty
   show (Term t) = show t
+  show (Func f) = show f
 
 instance Show Sort where
   show Box = "☐"
@@ -34,6 +35,11 @@ instance Show Sort where
 instance Show Term where
   show (B b) = show b
   show (N n) = show n
+
+instance Show Func where
+  show Plus = "+"
+  show And = "&"
+  show If = "If"
 
 instance Show TypeError where
   show BoxError = "Type Error: Attempted to get the type of Box"
@@ -52,7 +58,7 @@ pEither :: (Show a, Show b) => Either a b -> String
 pEither (Left a) = show a
 pEither (Right b) = show b
 
-showCalc :: Int -> String
+showCalc :: Int -> String --this corresponds with the getCalc function in Calculi.hs
 showCalc n =
   case n of
     0 -> "Simply Typed Lambda Calculus, (λ→)"
@@ -62,4 +68,4 @@ showCalc n =
     4 -> "Logical Framework, (λP)"
     5 -> "(λP2)"
     6 -> "Weak (λPω)"
-    7 -> "Calculus of Constructions, (λPω, λC)"
+    7 -> "Calculus of Constructions, (λPω)"

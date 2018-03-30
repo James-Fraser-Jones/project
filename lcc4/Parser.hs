@@ -126,12 +126,26 @@ arr = string "→"
 
 app :: Parser String
 app = string "@"
+
+amp :: Parser String
+amp = string "&"
+
+iff :: Parser String
+iff = string "If"
+
+plus :: Parser String
+plus = string "+"
 --------------------------------------------------------------------------------------------------------
 --Expressions
 
 abs :: Parser Abs
 abs = lam *> pure Lam
   <|> pi  *> pure Pi
+
+func :: Parser Func
+func = plus *> pure Plus
+   <|> amp *> pure And
+   <|> iff *> pure If
 
 term :: Parser Term
 term = B <$> bool
@@ -149,6 +163,7 @@ lit :: Parser Lit
 lit = Sort <$> sort
   <|> Type <$> type'
   <|> Term <$> term
+  <|> Func <$> func
 
 var :: Parser Var
 var = (:) <$> lower <*> (many (lower <|> digit))

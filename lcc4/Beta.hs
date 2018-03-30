@@ -1,4 +1,4 @@
-module Beta (normalize, typeCheck) where
+module Beta (delta, normalize, typeCheck) where
 import Types
 
 import Data.List
@@ -68,6 +68,9 @@ typeLit l =
     (Type _)     -> Right $ Lit (Sort Star)
     (Term (N _)) -> Right $ Lit (Type Nat)
     (Term (B _)) -> Right $ Lit (Type Bool)
+    (Func And)   -> Right $ Abs Pi "x" (Lit (Type Bool)) (Abs Pi "y" (Lit (Type Bool)) (Lit (Type Bool)))
+    (Func Plus)  -> Right $ Abs Pi "x" (Lit (Type Nat)) (Abs Pi "y" (Lit (Type Nat)) (Lit (Type Nat)))
+    (Func If)    -> Right $ Abs Pi "a" (Lit (Sort Star)) (Abs Pi "b" (Lit (Type Bool)) (Abs Pi "x" (Var "a") (Abs Pi "y" (Var "a") (Var "a"))))
 
 tC :: Context -> Calculus -> Expr -> Either TypeError Expr
 tC _ _ (Lit l) = typeLit l
@@ -95,6 +98,22 @@ tC c ca (App e1 e2) = do
 appComp :: Expr -> Expr -> Expr -> Either TypeError Expr
 appComp (Abs Pi x t1 b) e t2 = if alpha t1 t2 then Right $ substitute e x b else Left MismatchAppError
 appComp _ _ _ = Left NonLamAppError
+--------------------------------------------------------------------------------------------------------
+--Delta Reduction (applying literal functions to literal values)
+
+getInt :: Expr -> Int
+getInt (Lit (Term (N n1))) = n1
+getInt (App (App (Lit (Func Plus)) n1) n2) = (getInt n1) + (getInt n2)
+getInt (App (App (App (App (Lit (Func If)) (Lit (Type Nat))) b) n1) n2) = if getBool b then getInt n1 else getInt n2
+
+getBool :: Expr -> Bool
+getBool (Lit (Term (B b1))) = b1
+getBool (App (App (Lit (Func And)) b1) b2) = (getBool b1) && (getBool b2)
+getBool (App (App (App (App (Lit (Func If)) (Lit (Type Bool))) b) b1) b2) = if getBool b then getBool b1 else getBool b2
+
+delta :: Type -> Expr -> Expr
+delta Nat e = (Lit (Term (N $ getInt e)))
+delta Bool e = (Lit (Term (B $ getBool e)))
 --------------------------------------------------------------------------------------------------------
 --Top level functions
 

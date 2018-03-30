@@ -53,3 +53,7 @@ constBool = "(\\g:*->Bool)"
 
 ex1 = typeTypeApp ++ " @ " ++ constBool
 ex2 = polyId ++ " @ (^g:Nat->Nat)" ++ " @ (\\g:Nat->g)" ++ " @ 3"
+
+exIf = "If @ Nat @ True @ 6 @ 4"
+exPlus = "+ @ 4 @ 7"
+exAnd = "& @ True @ False"
