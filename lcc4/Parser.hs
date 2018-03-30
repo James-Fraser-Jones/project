@@ -11,7 +11,7 @@ import Data.Char
 
 newtype Parser a = Parser { parse :: String -> [(a, String)] }
 
-runParser :: Parser a -> String -> Either ParseError a
+runParser :: Parser a -> String -> Either Error a
 runParser m s =
   case parse m s of
     [(res, [])] -> Right res
@@ -179,6 +179,6 @@ expr = chainl1 exprNoL (app *> pure App)
 --------------------------------------------------------------------------------------------------------
 --Top Level Function
 
-getExpr :: String -> Either ParseError Expr
+getExpr :: String -> Either Error Expr
 getExpr s = runParser expr (removeW s)
   where removeW = foldr (\c cs -> if isSpace c then cs else c:cs) []

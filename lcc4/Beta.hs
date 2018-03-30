@@ -48,11 +48,11 @@ beta e = e --neither reduction nor propagation
 --------------------------------------------------------------------------------------------------------
 --Typechecking
 
-isSort :: Expr -> Either TypeError Expr
+isSort :: Expr -> Either Error Expr
 isSort (Lit (Sort s)) = Right $ Lit (Sort s)
 isSort _ = Left NonSortError
 
-wellTyped :: Calculus -> Expr -> Expr -> Either TypeError Expr
+wellTyped :: Calculus -> Expr -> Expr -> Either Error Expr
 wellTyped ca (Lit (Sort i)) (Lit (Sort o)) =
   if elem (i, o) ca then Right (Lit (Sort o)) else Left NonSortError
 wellTyped _ _ _ = Left NonSortError
@@ -60,7 +60,7 @@ wellTyped _ _ _ = Left NonSortError
 extend :: Var -> Expr -> Context -> Context
 extend v e c = (v,e):c
 
-typeLit :: Lit -> Either TypeError Expr
+typeLit :: Lit -> Either Error Expr
 typeLit l =
   case l of
     (Sort Box)   -> Left BoxError
@@ -72,7 +72,7 @@ typeLit l =
     (Func Plus)  -> Right $ Abs Pi "x" (Lit (Type Nat)) (Abs Pi "y" (Lit (Type Nat)) (Lit (Type Nat)))
     (Func If)    -> Right $ Abs Pi "a" (Lit (Sort Star)) (Abs Pi "b" (Lit (Type Bool)) (Abs Pi "x" (Var "a") (Abs Pi "y" (Var "a") (Var "a"))))
 
-tC :: Context -> Calculus -> Expr -> Either TypeError Expr
+tC :: Context -> Calculus -> Expr -> Either Error Expr
 tC _ _ (Lit l) = typeLit l
 
 tC c ca (Var x) = if isJust l then Right (fromJust l) else Left LookupError
@@ -95,7 +95,7 @@ tC c ca (App e1 e2) = do
   t <- (tC c ca e2)
   appComp f e2 t
 
-appComp :: Expr -> Expr -> Expr -> Either TypeError Expr
+appComp :: Expr -> Expr -> Expr -> Either Error Expr
 appComp (Abs Pi x t1 b) e t2 = if alpha t1 t2 then Right $ substitute e x b else Left MismatchAppError
 appComp _ _ _ = Left NonLamAppError
 --------------------------------------------------------------------------------------------------------
@@ -104,16 +104,17 @@ appComp _ _ _ = Left NonLamAppError
 getInt :: Expr -> Int
 getInt (Lit (Term (N n1))) = n1
 getInt (App (App (Lit (Func Plus)) n1) n2) = (getInt n1) + (getInt n2)
-getInt (App (App (App (App (Lit (Func If)) (Lit (Type Nat))) b) n1) n2) = if getBool b then getInt n1 else getInt n2
+getInt (App (App (App (App (Lit (Func If)) _) b) n1) n2) = if getBool b then getInt n1 else getInt n2
 
 getBool :: Expr -> Bool
 getBool (Lit (Term (B b1))) = b1
 getBool (App (App (Lit (Func And)) b1) b2) = (getBool b1) && (getBool b2)
-getBool (App (App (App (App (Lit (Func If)) (Lit (Type Bool))) b) b1) b2) = if getBool b then getBool b1 else getBool b2
+getBool (App (App (App (App (Lit (Func If)) _) b) b1) b2) = if getBool b then getBool b1 else getBool b2
 
-delta :: Type -> Expr -> Expr
-delta Nat e = (Lit (Term (N $ getInt e)))
-delta Bool e = (Lit (Term (B $ getBool e)))
+delta :: Expr -> Expr -> Expr
+delta (Lit (Type Nat)) e = (Lit (Term (N $ getInt e)))
+delta (Lit (Type Bool)) e = (Lit (Term (B $ getBool e)))
+delta _ e = e
 --------------------------------------------------------------------------------------------------------
 --Top level functions
 
@@ -121,7 +122,7 @@ normalize :: Expr -> Expr
 normalize e = if e == e' then e' else normalize e'
   where e' = beta e
 
-typeCheck :: Calculus -> Expr -> Either TypeError Expr
+typeCheck :: Calculus -> Expr -> Either Error Expr
 typeCheck = tC [] --begin typechecking with empty context
 --------------------------------------------------------------------------------------------------------
 --Notes
@@ -157,9 +158,9 @@ with my pre-defined literal values
 --------------------------------------------------------------------------------------------------------
 PRIORITY:
 
-Implement capture avoiding substitution in as painless a way as possible but make sure that you actually need it.
-
-Implement functions for literals (plus for naturals and conjunction for booleans, maybe also if??)
+Check with Nick that you certainly do not need capture avoiding substitution
+Literal functions are now working however "If" function slips underneath typchecking allowing it to be
+used in calculi without polymorphism
 
 Get command line interface working propperly (maybe I can use Haskeline??)
 all I really need is for arrow keys to exhibit their usual behavior with regards to the command line.

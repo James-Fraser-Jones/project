@@ -27,11 +27,10 @@ data Type = Bool | Nat deriving (Eq, Show) --the types of the terms below
 data Term = B Bool | N Int deriving Eq --the example literal terms of this language
 data Func = Plus | And | If deriving Eq --example literal functions
 
-data ParseError = RemainError --not all of the input was consumed during parsing
-                | GeneralError --an error occoured during parsing
-
-data TypeError = BoxError --attempting to get type of Box
-               | LookupError --attempting to get type of a free variable
-               | MismatchAppError --attempting to apply an abstraction to an expression with the wrong type
-               | NonLamAppError --attempting to apply a non-lambda abstraction to an exprression
-               | NonSortError --expression is not a specific sort when it should be
+data Error = BoxError --attempting to get type of Box
+           | LookupError --attempting to get type of a free variable
+           | MismatchAppError --attempting to apply an abstraction to an expression with the wrong type
+           | NonLamAppError --attempting to apply a non-lambda abstraction to an exprression
+           | NonSortError --expression is not a specific sort when it should be
+           | RemainError --not all of the input was consumed during parsing
+           | GeneralError --an error occoured during parsing

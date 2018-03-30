@@ -41,16 +41,14 @@ instance Show Func where
   show And = "&"
   show If = "If"
 
-instance Show TypeError where
-  show BoxError = "Type Error: Attempted to get the type of Box"
-  show LookupError = "Type Error: Attempted to get the type of a free variable"
-  show MismatchAppError = "Type Error: Lambda function type does not match the expression it's applied to"
-  show NonLamAppError = "Type Error: Non lambda function is applied to an expression"
-  show NonSortError = "Type Error: Expression is not well typed"
-
-instance Show ParseError where
-  show RemainError = "Parser Error: Did not consume entire stream"
-  show GeneralError = "Parser Error: Invalid input"
+instance Show Error where
+  show BoxError = "Attempted to get the type of Box"
+  show LookupError = "Variable is not in scope"
+  show MismatchAppError = "Lambda function type does not match the expression it's applied to"
+  show NonLamAppError = "Non lambda function is applied to an expression"
+  show NonSortError = "Expression is not well typed"
+  show RemainError = "Parser did not consume entire string"
+  show GeneralError = "Invalid input string"
 --------------------------------------------------------------------------------------------------------
 --Other printing functions
 
