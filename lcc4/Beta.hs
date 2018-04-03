@@ -3,10 +3,11 @@ import Types
 
 import Data.List
 import Data.Maybe
+import Data.Functor
 --------------------------------------------------------------------------------------------------------
 --Alpha equivalence
 
-canonym' :: Cantext -> String -> Expr -> Expr
+canonym' :: Cantext -> String -> Expr -> Expr --alternatively, just convert both expressions to use de brujin indecies
 canonym' _ _ (Lit l) = Lit l
 canonym' c _ (Var x) = Var $ if isJust l then fromJust l else "F" --all (globally) free variables are alpha equivalent
   where l = lookup x c
@@ -22,11 +23,23 @@ alpha e1 e2 = (canonym e1) == (canonym e2)
 --------------------------------------------------------------------------------------------------------
 --Beta reduction
 
+allVars :: Expr -> [Var]
+allVars (Lit l) = []
+allVars (Var x) = [x]
+allVars (App e1 e2)  = (allVars e1) `union` (allVars e2)
+allVars (Abs _ v e e') = (allVars e) `union` (allVars e')
+
 freeVars :: Expr -> [Var]
 freeVars (Lit l) = []
 freeVars (Var x) = [x]
 freeVars (App e1 e2)  = (freeVars e1) `union` (freeVars e2)
 freeVars (Abs _ v e e') = (freeVars e) `union` (freeVars e' \\ [v])
+
+vars :: [Var]
+vars = (\(a, b) -> ['a'..'z'] !! b : if a == 0 then "" else show $ a+1).(flip quotRem 26) <$> [0..]
+
+fresh :: [Var] -> Var
+fresh used = head $ vars \\ used
 
 sub :: [Var] -> Expr -> Var -> Expr -> Expr
 sub fVars s v (Lit l) = Lit l
@@ -70,7 +83,6 @@ typeLit l =
     (Term (B _)) -> Right $ Lit (Type Bool)
     (Func And)   -> Right $ Abs Pi "x" (Lit (Type Bool)) (Abs Pi "y" (Lit (Type Bool)) (Lit (Type Bool)))
     (Func Plus)  -> Right $ Abs Pi "x" (Lit (Type Nat)) (Abs Pi "y" (Lit (Type Nat)) (Lit (Type Nat)))
-    (Func If)    -> Right $ Abs Pi "a" (Lit (Sort Star)) (Abs Pi "b" (Lit (Type Bool)) (Abs Pi "x" (Var "a") (Abs Pi "y" (Var "a") (Var "a"))))
 
 tC :: Context -> Calculus -> Expr -> Either Error Expr
 tC _ _ (Lit l) = typeLit l
@@ -104,12 +116,10 @@ appComp _ _ _ = Left NonLamAppError
 getInt :: Expr -> Int
 getInt (Lit (Term (N n1))) = n1
 getInt (App (App (Lit (Func Plus)) n1) n2) = (getInt n1) + (getInt n2)
-getInt (App (App (App (App (Lit (Func If)) _) b) n1) n2) = if getBool b then getInt n1 else getInt n2
 
 getBool :: Expr -> Bool
 getBool (Lit (Term (B b1))) = b1
 getBool (App (App (Lit (Func And)) b1) b2) = (getBool b1) && (getBool b2)
-getBool (App (App (App (App (Lit (Func If)) _) b) b1) b2) = if getBool b then getBool b1 else getBool b2
 
 delta :: Expr -> Expr -> Expr
 delta (Lit (Type Nat)) e = (Lit (Term (N $ getInt e)))
@@ -156,14 +166,39 @@ I also want to figure out how I can support both nested abstractions and nested 
 I also need to figure out how to implement addition and boolean conjunction as example functions to work
 with my pre-defined literal values
 --------------------------------------------------------------------------------------------------------
-PRIORITY:
+VARIABLE CAPTURE:
 
-Check with Nick that you certainly do not need capture avoiding substitution
-Literal functions are now working however "If" function slips underneath typchecking allowing it to be
-used in calculi without polymorphism
+I do need capture avoiding substitution:
+"\\y:Nat -> ((\\x:Nat -> \\y:Nat -> x) @ y @ 2)"
+beta reduces to:
+"\\y:Nat -> ((           \\y:Nat -> y)     @ 2)"
+then to:
+"\\y:Nat ->                         2          "
+
+What should have happened was:
+"\\y:Nat -> ((\\x:Nat -> \\z:Nat -> x) @ y @ 2)"
+beta reduces to:
+"\\y:Nat -> ((           \\z:Nat -> y)     @ 2)"
+then to:
+"\\y:Nat ->                         y          "
+
+This is in spite of the fact that
+"(\\y:Nat -> ((\\x:Nat -> \\y:Nat -> x) @ y @ 2)) @ 5"
+actually correctly reduces to 5, not 2 as suggested by the unapplied function
+however this is still variable capture that needs to be dealt with
+
+LITERALS:
+
+I don't really know how to implement literals propperly. Can't figure out a propper way to implement conditional
+branches (ifs, case statements, guards, pattern matching, etc..)
+Would also be nice to add definitions and ADTs but I think this is going to far really.
+
+UTILITY:
 
 Get command line interface working propperly (maybe I can use Haskeline??)
 all I really need is for arrow keys to exhibit their usual behavior with regards to the command line.
+
+EXTRAS:
 
 Maybe change error messages to reflect when someone has attempted to use a more powerful calculus than is allowed?
 

@@ -39,7 +39,6 @@ instance Show Term where
 instance Show Func where
   show Plus = "+"
   show And = "&"
-  show If = "If"
 
 instance Show Error where
   show BoxError = "Attempted to get the type of Box"

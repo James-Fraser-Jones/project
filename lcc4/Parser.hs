@@ -130,9 +130,6 @@ app = string "@"
 amp :: Parser String
 amp = string "&"
 
-iff :: Parser String
-iff = string "If"
-
 plus :: Parser String
 plus = string "+"
 --------------------------------------------------------------------------------------------------------
@@ -145,7 +142,6 @@ abs = lam *> pure Lam
 func :: Parser Func
 func = plus *> pure Plus
    <|> amp *> pure And
-   <|> iff *> pure If
 
 term :: Parser Term
 term = B <$> bool
