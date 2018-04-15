@@ -13,14 +13,18 @@ fromLeft (Right b) = error "Attempted to get Left value from a Right Either"
 --Types
 
 type Var = String
-type Cantext = [(Var, Var)]
-type Context = [(Var, Expr)]
-type Calculus = [(Sort, Sort)]
+type Cantext = [(Var, Var)] --used in alpha conversion
+type Context = [(Var, Expr)] --used in typechecking
+type AbsForms = [(Sort, Sort)] --used in typechecking (Forms of abstraction allowed by current type system)
 
-data Expr = Lit Lit | Var Var | App Expr Expr | Abs Abs Var Expr Expr deriving Eq
+data Calculus = S | SP | ST | SD | SPT | SPD | STD | SPTD
+
+data Expr = Lit Lit
+          | Var Var
+          | App Expr Expr
+          | Abs Abs Var Expr Expr deriving Eq
 
 data  Abs = Lam | Pi deriving Eq --used to differentiate functions from function types
-
 data  Lit = Sort Sort | Type Type | Term Term | Func Func deriving Eq
 data Sort = Box | Star deriving Eq --the 2 sorts used in the lambda cube language
 data Type = Bool | Nat deriving (Eq, Show) --the types of the terms below

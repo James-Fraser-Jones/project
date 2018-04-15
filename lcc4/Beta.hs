@@ -65,7 +65,7 @@ isSort :: Expr -> Either Error Expr
 isSort (Lit (Sort s)) = Right $ Lit (Sort s)
 isSort _ = Left NonSortError
 
-wellTyped :: Calculus -> Expr -> Expr -> Either Error Expr
+wellTyped :: AbsForms -> Expr -> Expr -> Either Error Expr
 wellTyped ca (Lit (Sort i)) (Lit (Sort o)) =
   if elem (i, o) ca then Right (Lit (Sort o)) else Left NonSortError
 wellTyped _ _ _ = Left NonSortError
@@ -84,7 +84,7 @@ typeLit l =
     (Func And)   -> Right $ Abs Pi "x" (Lit (Type Bool)) (Abs Pi "y" (Lit (Type Bool)) (Lit (Type Bool)))
     (Func Plus)  -> Right $ Abs Pi "x" (Lit (Type Nat)) (Abs Pi "y" (Lit (Type Nat)) (Lit (Type Nat)))
 
-tC :: Context -> Calculus -> Expr -> Either Error Expr
+tC :: Context -> AbsForms -> Expr -> Either Error Expr
 tC _ _ (Lit l) = typeLit l
 
 tC c ca (Var x) = if isJust l then Right (fromJust l) else Left LookupError
@@ -132,7 +132,7 @@ normalize :: Expr -> Expr
 normalize e = if e == e' then e' else normalize e'
   where e' = beta e
 
-typeCheck :: Calculus -> Expr -> Either Error Expr
+typeCheck :: AbsForms -> Expr -> Either Error Expr
 typeCheck = tC [] --begin typechecking with empty context
 --------------------------------------------------------------------------------------------------------
 --Notes

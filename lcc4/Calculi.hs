@@ -1,16 +1,8 @@
-module Calculi (calculi, testStrings) where
+module Calculi (calculi, testStrings, getAbsForms) where
 import Types
 --------------------------------------------------------------------------------------------------------
---Calculus generation and tests for them
-
-getCalc :: Int -> Calculus
-getCalc n = (check n 8 (Star, Box)) ++ (check n 4 (Box, Box)) ++ (check n 2 (Box, Star)) ++ [(Star, Star)]
-  where check n k c = if (n `mod` k) >= (k `div` 2) then [c] else []
-
-{-
-VV = Value to Value function, TV = Type to Value function
-TT = Type to Type function,   VT = Value to Type function
--}
+{- VV = Value to Value function, TV = Type to Value function
+   TT = Type to Type function,   VT = Value to Type function -}
 t0, t1, t2, t3, t4, t5, t6, t7 :: String
 t0 = "(\\x:Nat -> x) @ 4" --VV
 t1 = "(\\x:*   ->   x) @ Nat" --TT
@@ -23,8 +15,19 @@ t7 = "(\\x:^c:*->* -> \\y:^d:*->Nat -> \\z:Nat -> Nat) @ (\\a:* -> a) @ (\\b:* -
 --------------------------------------------------------------------------------------------------------
 --Top level functions
 
-calculi :: [Calculus]
-calculi = map getCalc [0..7]
-
 testStrings :: [String]
 testStrings = [t0,t1,t2,t3,t4,t5,t6,t7]
+
+calculi :: [Calculus]
+calculi = [S, SP, ST, SD, SPT, SPD, STD, SPTD]
+
+getAbsForms :: Calculus -> AbsForms
+getAbsForms c = case c of
+  S ->    [(Star,Star)]
+  SP ->   [(Star,Star),(Box,Star)]
+  ST ->   [(Star,Star),(Box,Box)]
+  SD ->   [(Star,Star),(Star,Box)]
+  SPT ->  [(Star,Star),(Box,Star),(Box,Box)]
+  STD ->  [(Star,Star),(Box,Box),(Star,Box)]
+  SPD ->  [(Star,Star),(Box,Star),(Star,Box)]
+  SPTD -> [(Star,Star),(Box,Star),(Box,Box),(Star,Box)]

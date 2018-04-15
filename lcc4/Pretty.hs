@@ -1,4 +1,4 @@
-module Pretty(Show, pEither, showCalc) where
+module Pretty(Show, pEither) where
 import Types
 --------------------------------------------------------------------------------------------------------
 --Utility functions
@@ -40,29 +40,29 @@ instance Show Func where
   show Plus = "+"
   show And = "&"
 
+instance Show Calculus where
+  show c = case c of
+      S ->    "Simply Typed Lambda Calculus, (λ→)"
+      SP ->   "Second Order Lambda Calculus, System F, (λ2)"
+      ST ->   "Weak (λω)"
+      SD ->   "Logical Framework, (λP)"
+      SPT ->  "System F Omega, (λω)"
+      STD ->  "Weak (λPω)"
+      SPD ->  "(λP2)"
+      SPTD -> "Calculus of Constructions, (λPω)"
+
 instance Show Error where
-  show BoxError = "Attempted to get the type of Box"
-  show LookupError = "Variable is not in scope"
-  show MismatchAppError = "Lambda function type does not match the expression it's applied to"
-  show NonLamAppError = "Non lambda function is applied to an expression"
-  show NonSortError = "Expression is not well typed"
-  show RemainError = "Parser did not consume entire string"
-  show GeneralError = "Invalid input string"
+  show e = case e of
+    BoxError ->         "Attempted to get the type of Box"
+    LookupError ->      "Variable is not in scope"
+    MismatchAppError -> "Lambda function type does not match the expression it's applied to"
+    NonLamAppError ->   "Non lambda function is applied to an expression"
+    NonSortError ->     "Expression is not well typed"
+    RemainError ->      "Parser did not consume entire string"
+    GeneralError ->     "Invalid input string"
 --------------------------------------------------------------------------------------------------------
 --Other printing functions
 
 pEither :: (Show a, Show b) => Either a b -> String
 pEither (Left a) = show a
 pEither (Right b) = show b
-
-showCalc :: Int -> String --this corresponds with the getCalc function in Calculi.hs
-showCalc n =
-  case n of
-    0 -> "Simply Typed Lambda Calculus, (λ→)"
-    1 -> "Second Order Lambda Calculus, System F, (λ2)"
-    2 -> "Weak (λω)"
-    3 -> "System F Omega, (λω)"
-    4 -> "Logical Framework, (λP)"
-    5 -> "(λP2)"
-    6 -> "Weak (λPω)"
-    7 -> "Calculus of Constructions, (λPω)"
