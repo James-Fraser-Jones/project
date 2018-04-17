@@ -9,9 +9,6 @@ import Calculi
 import System.IO
 import Text.Read
 import Data.Maybe
-
---ghc -o hlci Main.hs
-
 --------------------------------------------------------------------------------------------------------
 --Top level functions
 
