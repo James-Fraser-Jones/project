@@ -6,8 +6,12 @@ import Printer
 import Beta
 import Calculi
 
+import System.IO
 import Text.Read
 import Data.Maybe
+
+--ghc -o hlci Main.hs
+
 --------------------------------------------------------------------------------------------------------
 --Top level functions
 
@@ -15,6 +19,7 @@ defaultCalc = SPTD --Default Calculus is the CoC
 
 main :: IO()
 main = do
+  hSetBuffering stdout NoBuffering --allows HLCI prompt to appear on the same line as user input
   putStrLn $ "\n Type \"Help\" for help."
   putStrLn $ " Calc set to: " ++ pCalc defaultCalc ++ "\n"
   loop defaultCalc
