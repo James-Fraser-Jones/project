@@ -1,4 +1,4 @@
-module Pretty(Show, pEither) where
+module Printer(Show, pEither, pCalc) where
 import Types
 --------------------------------------------------------------------------------------------------------
 --Utility functions
@@ -40,17 +40,6 @@ instance Show Func where
   show Plus = "+"
   show And = "&"
 
-instance Show Calculus where
-  show c = case c of
-      S ->    "Simply Typed Lambda Calculus, (λ→)"
-      SP ->   "Second Order Lambda Calculus, System F, (λ2)"
-      ST ->   "Weak (λω)"
-      SD ->   "Logical Framework, (λP)"
-      SPT ->  "System F Omega, (λω)"
-      STD ->  "Weak (λPω)"
-      SPD ->  "(λP2)"
-      SPTD -> "Calculus of Constructions, (λPω)"
-
 instance Show Error where
   show e = case e of
     BoxError ->         "Attempted to get the type of Box"
@@ -62,6 +51,17 @@ instance Show Error where
     GeneralError ->     "Invalid input string"
 --------------------------------------------------------------------------------------------------------
 --Other printing functions
+
+pCalc :: Calculus -> String
+pCalc c = case c of
+    S ->    "Simply Typed Lambda Calculus, λ→"
+    SP ->   "Second Order Lambda Calculus, System F, λ2"
+    ST ->   "Weak λω"
+    SD ->   "Logical Framework, λP"
+    SPT ->  "System F Omega, λω"
+    STD ->  "Weak λPω"
+    SPD ->  "λP2"
+    SPTD -> "Calculus of Constructions, λPω"
 
 pEither :: (Show a, Show b) => Either a b -> String
 pEither (Left a) = show a

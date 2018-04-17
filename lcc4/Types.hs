@@ -17,7 +17,7 @@ type Cantext = [(Var, Var)] --used in alpha conversion
 type Context = [(Var, Expr)] --used in typechecking
 type AbsForms = [(Sort, Sort)] --used in typechecking (Forms of abstraction allowed by current type system)
 
-data Calculus = S | SP | ST | SD | SPT | SPD | STD | SPTD
+data Calculus = S | SP | ST | SD | SPT | SPD | STD | SPTD deriving (Show, Read)
 
 data Expr = Lit Lit
           | Var Var

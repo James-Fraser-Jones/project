@@ -1,32 +1,74 @@
 import Types
+
 import Parser
+import Printer
+
 import Beta
-import Pretty
 import Calculi
+
+import Text.Read
+import Data.Maybe
 --------------------------------------------------------------------------------------------------------
---Main functions
+--Top level functions
 
-coc = SPTD
+defaultCalc = SPTD --Default Calculus is the CoC
 
-{-
-respond :: Calculus -> String -> IO Calculus
-respond c s = let
-
-loop :: Calculus -> IO()
-loop c = do
-  putStr "HLCi> "
-  s <- getLine
-  if s == "exit" then return ()
-    else do
-      nc <- respond c s
-      loop nc
--}
+main :: IO()
+main = do
+  putStrLn $ "\n Type \"Help\" for help."
+  putStrLn $ " Calc set to: " ++ pCalc defaultCalc ++ "\n"
+  loop defaultCalc
 
 run :: Calculus -> String -> IO ()
 run c s = do
-  putStrLn $ "\n  Calc -- " ++ (show c)
+  putStrLn $ "" -- \n  Calc -- " ++ (pCalc c)
   let vals = getVals c s
   if isRight vals then success $ fmap show (fromRight vals) else (err.show.fromLeft) vals
+
+runTests :: IO()
+runTests = do
+  putStr("\n")
+  testCalculi calculi expected
+
+help :: IO()
+help = (putStrLn "\n Type a valid lambda expression or type one of the following calculi to switch the type system:") >> (mapM_ putStrLn helpStrings) >> (putStrLn "")
+--------------------------------------------------------------------------------------------------------
+--Example strings
+
+polyId = "(\\a:*->\\x:a->x)" --polymorphic identity function for terms of type a
+natId = polyId ++ " @ Nat"
+boolId = polyId ++ " @ Bool"
+
+typeTypeApp = "(\\x:^a:*->*->\\y:*->x @ y)"
+constBool = "(\\g:*->Bool)"
+
+ex1 = typeTypeApp ++ " @ " ++ constBool
+ex2 = polyId ++ " @ (^g:Nat->Nat)" ++ " @ (\\g:Nat->g)" ++ " @ 3"
+
+exPlus = "(\\x:Nat -> \\y:Nat -> + @ x @ y) @ 4 @ 13"
+exAnd = "(\\x:Bool -> \\y:Bool -> & @ x @ y) @ True @ False"
+
+exCapture = "\\y:Nat -> ((\\x:Nat -> \\y:Nat -> x) @ y @ 2)"
+--------------------------------------------------------------------------------------------------------
+--Running
+
+helpStrings :: [String]
+helpStrings = map (" " ++) (zipWith (++) (map show calculi) (map ((" -- " ++).pCalc) calculi))
+
+loop :: Calculus -> IO()
+loop calc = do
+  putStr "HLCi> "
+  input <- getLine
+  let newCalc = (readMaybe input) :: Maybe Calculus
+  if isJust newCalc then do
+    putStrLn $ "\n Calc set to: " ++ pCalc (fromJust newCalc) ++ "\n"
+    loop $ fromJust newCalc
+    else if input == "Help" then do
+      help
+      loop calc
+      else do
+        run calc input
+        loop calc
 
 success :: [String] -> IO ()
 success [e, t, e', d] = do
@@ -47,32 +89,32 @@ getVals c s = do
   let e' = normalize e
   let d = delta t e'
   return [e, t, e', d]
-
-test :: Calculus -> Int --Takes a Calculus and returns the number of passed tests
-test c = foldr f 0 tests
-  where f test score = score + (if isRight $ typeCheck (getAbsForms c) test then 1 else 0)
-        tests = map (fromRight.getExpr) testStrings
-
-calculiTests :: IO()
-calculiTests = do
-  let results = map test calculi
-  let expected = [1, 2, 2, 2, 4, 4, 4, 8]
-  putStrLn $ "\n  Results -- " ++ (show results)
-  putStrLn $ " Expected -- " ++ (show expected)
-  putStrLn $ (if results == expected then " All results as expected!" else " Some unexpected results!") ++ "\n"
-  return ()
 --------------------------------------------------------------------------------------------------------
---Example strings
+--Testing
 
-polyId = "(\\a:*->\\x:a->x)" --polymorphic identity function for terms of type a
-natId = polyId ++ " @ Nat"
-boolId = polyId ++ " @ Bool"
+tests :: [Expr]
+tests = map (fromRight.getExpr) testStrings
 
-typeTypeApp = "(\\x:^a:*->*->\\y:*->x @ y)"
-constBool = "(\\g:*->Bool)"
+expected :: [[Bool]]
+expected =
+  [[ True,False,False,False,False,False,False,False],
+   [ True,False, True,False,False,False,False,False],
+   [ True, True,False,False,False,False,False,False],
+   [ True,False,False, True,False,False,False,False],
+   [ True, True, True,False, True,False,False,False],
+   [ True,False, True, True,False,False, True,False],
+   [ True, True,False, True,False, True,False,False],
+   [ True, True, True, True, True, True, True, True]]
 
-ex1 = typeTypeApp ++ " @ " ++ constBool
-ex2 = polyId ++ " @ (^g:Nat->Nat)" ++ " @ (\\g:Nat->g)" ++ " @ 3"
+testCalculi :: [Calculus] -> [[Bool]] -> IO()
+testCalculi [] _ = return ()
+testCalculi (c:cs) (e:es) = do
+  test c e
+  testCalculi cs es
 
-exPlus = "(\\x:Nat -> \\y:Nat -> + @ x @ y) @ 4 @ 13"
-exAnd = "(\\x:Bool -> \\y:Bool -> & @ x @ y) @ True @ False"
+test :: Calculus -> [Bool] -> IO()
+test c e = do
+  putStrLn $ pCalc c
+  let results = map (\test -> (if isRight $ typeCheck (getAbsForms c) test then True else False)) tests
+  putStr $ show results
+  putStrLn $ " - " ++ (if results == e then "Correct" else "Incorrect") ++ "\n"

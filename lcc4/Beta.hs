@@ -5,6 +5,15 @@ import Data.List
 import Data.Maybe
 import Data.Functor
 --------------------------------------------------------------------------------------------------------
+--Top level functions
+
+normalize :: Expr -> Expr
+normalize e = if e == e' then e' else normalize e'
+  where e' = beta e
+
+typeCheck :: AbsForms -> Expr -> Either Error Expr
+typeCheck = tC [] --begin typechecking with empty context
+--------------------------------------------------------------------------------------------------------
 --Alpha equivalence
 
 canonym' :: Cantext -> String -> Expr -> Expr --alternatively, just convert both expressions to use de brujin indecies
@@ -61,9 +70,9 @@ beta e = e --neither reduction nor propagation
 --------------------------------------------------------------------------------------------------------
 --Typechecking
 
-isSort :: Expr -> Either Error Expr
-isSort (Lit (Sort s)) = Right $ Lit (Sort s)
-isSort _ = Left NonSortError
+getSort :: Expr -> Either Error Expr
+getSort (Lit (Sort s)) = Right $ Lit (Sort s)
+getSort _ = Left NonSortError
 
 wellTyped :: AbsForms -> Expr -> Expr -> Either Error Expr
 wellTyped ca (Lit (Sort i)) (Lit (Sort o)) =
@@ -94,7 +103,7 @@ tC c ca (Abs Lam x a b) = do
   b' <- (tC (extend x a c) ca b)
   let p = (Abs Pi x a b')
   p' <- (tC c ca p)
-  isSort p'
+  getSort p'
   return p
 
 tC c ca (Abs Pi x a b) = do
@@ -125,15 +134,6 @@ delta :: Expr -> Expr -> Expr
 delta (Lit (Type Nat)) e = (Lit (Term (N $ getInt e)))
 delta (Lit (Type Bool)) e = (Lit (Term (B $ getBool e)))
 delta _ e = e
---------------------------------------------------------------------------------------------------------
---Top level functions
-
-normalize :: Expr -> Expr
-normalize e = if e == e' then e' else normalize e'
-  where e' = beta e
-
-typeCheck :: AbsForms -> Expr -> Either Error Expr
-typeCheck = tC [] --begin typechecking with empty context
 --------------------------------------------------------------------------------------------------------
 --Notes
 
