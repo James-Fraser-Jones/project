@@ -172,8 +172,6 @@ exprNoL = parens expr
 
 expr :: Parser Expr
 expr = chainl1 exprNoL (app *> pure App)
---------------------------------------------------------------------------------------------------------
---Top Level Function
 
 getExpr :: String -> Either Error Expr
 getExpr s = runParser expr (removeW s)

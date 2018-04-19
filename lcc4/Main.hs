@@ -7,6 +7,7 @@ import Beta
 import Calculi
 
 import System.IO
+
 import Text.Read
 import Data.Maybe
 --------------------------------------------------------------------------------------------------------
@@ -17,7 +18,7 @@ defaultCalc = SPTD --Default Calculus is the CoC
 main :: IO()
 main = do
   hSetBuffering stdout NoBuffering --allows HLCI prompt to appear on the same line as user input
-  putStrLn $ "\n Type \"Help\" for help."
+  putStrLn $ "\n Type \"Help\" for help, \"Tests\" to run the calculus tests or \"Exit\" to exit the input loop"
   putStrLn $ " Calc set to: " ++ pCalc defaultCalc ++ "\n"
   loop defaultCalc
 
@@ -62,15 +63,13 @@ loop calc = do
   putStr "HLCi> "
   input <- getLine
   let newCalc = (readMaybe input) :: Maybe Calculus
-  if isJust newCalc then do
-    putStrLn $ "\n Calc set to: " ++ pCalc (fromJust newCalc) ++ "\n"
-    loop $ fromJust newCalc
-    else if input == "Help" then do
-      help
-      loop calc
-      else do
-        run calc input
-        loop calc
+  if isJust newCalc then (putStrLn $ "\n Calc set to: " ++ pCalc (fromJust newCalc) ++ "\n") >> (loop $ fromJust newCalc)
+    else case input of
+      ""      -> loop calc
+      "Help"  -> help >> loop calc
+      "Tests" -> runTests >> loop calc
+      "Exit"  -> putStrLn "\n Exiting loop" >> return ()
+      _       -> run calc input >> loop calc
 
 success :: [String] -> IO ()
 success [e, t, e', d] = do
@@ -92,7 +91,7 @@ getVals c s = do
   let d = delta t e'
   return [e, t, e', d]
 --------------------------------------------------------------------------------------------------------
---Testing
+--Testing Calculi
 
 tests :: [Expr]
 tests = map (fromRight.getExpr) testStrings
@@ -120,3 +119,6 @@ test c e = do
   let results = map (\test -> (if isRight $ typeCheck (getAbsForms c) test then True else False)) tests
   putStr $ show results
   putStrLn $ " - " ++ (if results == e then "Correct" else "Incorrect") ++ "\n"
+
+captureTest :: Expr
+captureTest = beta (fromRight (getExpr exCapture)) --shows that a potentially captured variable gets alpha converted correctly

@@ -1,4 +1,5 @@
 import Data.List (union, span, (\\))
+import Control.Monad.Reader
 
 type Name = String
 
@@ -8,16 +9,28 @@ data Exp
   | Lam Name Exp
   deriving (Eq,Show,Read)
 
--- show
+---------------------------------------------------------
+ex1 :: Exp
+ex1 = (Lam "x" (App (Var "x") (Var "y")))
+
+vars :: Exp -> Reader Bool [Name]
+vars (Var x) = return [x]
+vars (App a b) = do
+  a' <- vars a
+  b' <- vars b
+  return $ union a' b'
+vars (Lam n x) = do
+  isFree <- ask
+  let f = if isFree then (\\ [n]) else id
+  x' <- vars x
+  return $ f x'
+
 freeVars :: Exp -> [Name]
-freeVars (Var x) = [x]
-freeVars (App a b) = freeVars a `union` freeVars b
-freeVars (Lam n x) = freeVars x \\ [n]
+freeVars e = runReader (vars e) True
 
 allVars :: Exp -> [Name]
-allVars (Var x) = [x]
-allVars (App a b) = allVars a `union` allVars b
-allVars (Lam n x) = allVars x
+allVars e = runReader (vars e) False
+---------------------------------------------------------
 
 subst :: Name -> Exp -> Exp -> Exp
 subst x s b = sub vs0 b where

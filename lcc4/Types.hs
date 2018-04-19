@@ -10,14 +10,9 @@ fromRight (Left a) = error "Attempted to get Right value from a Left Either"
 fromLeft (Left a) = a
 fromLeft (Right b) = error "Attempted to get Left value from a Right Either"
 --------------------------------------------------------------------------------------------------------
---Types
+--Expression Types
 
 type Var = String
-type Cantext = [(Var, Var)] --used in alpha conversion
-type Context = [(Var, Expr)] --used in typechecking
-type AbsForms = [(Sort, Sort)] --used in typechecking (Forms of abstraction allowed by current type system)
-
-data Calculus = S | SP | ST | SD | SPT | SPD | STD | SPTD deriving (Show, Read)
 
 data Expr = Lit Lit
           | Var Var
@@ -25,11 +20,21 @@ data Expr = Lit Lit
           | Abs Abs Var Expr Expr deriving Eq
 
 data  Abs = Lam | Pi deriving Eq --used to differentiate functions from function types
+
 data  Lit = Sort Sort | Type Type | Term Term | Func Func deriving Eq
+
 data Sort = Box | Star deriving Eq --the 2 sorts used in the lambda cube language
 data Type = Bool | Nat deriving (Eq, Show) --the types of the terms below
 data Term = B Bool | N Int deriving Eq --the example literal terms of this language
 data Func = Plus | And deriving Eq --example literal functions
+--------------------------------------------------------------------------------------------------------
+--Other Types
+
+type Cantext = [(Var, Var)] --used in alpha conversion
+type Context = [(Var, Expr)] --used in typechecking
+type AbsForms = [(Sort, Sort)] --used in typechecking (Forms of abstraction allowed by current type system)
+
+data Calculus = S | SP | ST | SD | SPT | SPD | STD | SPTD deriving (Show, Read)
 
 data Error = BoxError --attempting to get type of Box
            | LookupError --attempting to get type of a free variable
