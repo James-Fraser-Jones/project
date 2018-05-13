@@ -7,7 +7,6 @@ import Data.Foldable(foldl')
 import Data.Char
 --------------------------------------------------------------------------------------------------------
 --Basic parsers and parser combinators
---(heavily inspired by http://dev.stephendiehl.com/fun/002_parsers.html and uob language engineering material)
 
 newtype Parser a = Parser { parse :: String -> [(a, String)] }
 
@@ -72,17 +71,8 @@ string (c:cs) = char c >>= \c' ->
 oneOf :: [Char] -> Parser Char
 oneOf s = satisfy (flip elem s)
 
-chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a --this was taken from Jamie
+chainl1 :: Parser a -> Parser (a -> a -> a) -> Parser a
 chainl1 p op = foldl' (flip ($)) <$> p <*> many (flip <$> op <*> p)
-
-{-
-chainr1 :: Parser a -> Parser (a -> a -> a) -> Parser a
-chainr1 p op = scan
-  where
-    scan = do{ x <- p; rest x }
-    rest x = do{ f <- op; y <- scan; return (f x y)}
-      <|> return x
--}
 
 token :: Parser a -> Parser a
 token px = (many $ satisfy isSpace) *> px

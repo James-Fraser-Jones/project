@@ -17,14 +17,14 @@ defaultCalc = SPTD --Default Calculus is the CoC
 
 main :: IO()
 main = do
-  hSetBuffering stdout NoBuffering --allows HLCI prompt to appear on the same line as user input
+  hSetBuffering stdout NoBuffering --force HLCI prompt to appear on the same line as user input
   putStrLn $ "\n Type \"Help\" for help, \"Tests\" to run the calculus tests or \"Exit\" to exit the input loop"
   putStrLn $ " Calc set to: " ++ pCalc defaultCalc ++ "\n"
   loop defaultCalc
 
 run :: Calculus -> String -> IO ()
 run c s = do
-  putStrLn $ "" -- \n  Calc -- " ++ (pCalc c)
+  putStrLn $ ""
   let vals = getVals c s
   if isRight vals then success $ fmap show (fromRight vals) else (err.show.fromLeft) vals
 
@@ -36,7 +36,7 @@ runTests = do
 help :: IO()
 help = (putStrLn "\n Type a valid lambda expression or type one of the following calculi to switch the type system:") >> (mapM_ putStrLn helpStrings) >> (putStrLn "")
 --------------------------------------------------------------------------------------------------------
---Example strings
+--Example strings (only use a single backslash for lambda when using compiled execuatable)
 
 polyId = "(\\a:*->\\x:a->x)" --polymorphic identity function for terms of type a
 natId = polyId ++ " @ Nat"
@@ -121,4 +121,4 @@ test c e = do
   putStrLn $ " - " ++ (if results == e then "Correct" else "Incorrect") ++ "\n"
 
 captureTest :: Expr
-captureTest = beta (fromRight (getExpr exCapture)) --shows that a potentially captured variable gets alpha converted correctly
+captureTest = beta (fromRight (getExpr exCapture)) --demonstrates capture avoidance

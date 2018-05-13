@@ -8,7 +8,7 @@ import Control.Monad.Reader
 --------------------------------------------------------------------------------------------------------
 --Alpha equivalence
 
-canonym' :: Cantext -> String -> Expr -> Expr --alternatively, just convert both expressions to use de brujin indecies
+canonym' :: Cantext -> String -> Expr -> Expr
 canonym' _ _ (Lit l) = Lit l
 canonym' c _ (Var x) = Var $ if isJust l then fromJust l else "F" --all (globally) free variables are alpha equivalent
   where l = lookup x c
